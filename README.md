@@ -33,3 +33,4 @@ Create one Render Web Service with:
 - Product and homepage images use durable hosted URLs. Render's local filesystem is ephemeral; connect object storage such as Cloudinary or S3 before adding binary uploads.
 
 Set an email in `ADMIN_EMAILS` before registering the shop owner's account. Existing Firebase data is not migrated automatically; export and transform it into MongoDB before production cutover.
+# LAXSHOBA
