@@ -40,8 +40,8 @@ export default function Categories() {
   }
 
   return (
-    <>
-      <div className="admin-topbar"><h1>Categories</h1></div>
+    <div>
+      <h1>Categories</h1>
 
       <div className="admin-panel-box">
         <h3>Add Category</h3>
@@ -77,6 +77,6 @@ export default function Categories() {
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }

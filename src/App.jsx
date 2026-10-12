@@ -5,12 +5,15 @@ import Loading from './components/Loading';
 import { RequireAdmin, RequireAuth } from './components/RouteGuards';
 
 import Home from './pages/Home';
+import Scan from './pages/Scan';
 import Shop from './pages/Shop';
 import Product from './pages/Product';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import About from './pages/About';
 import NotFound from './pages/NotFound';
 
@@ -31,11 +34,14 @@ export default function App() {
         {/* Public site */}
         <Route element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="scan" element={<Scan />} />
           <Route path="shop" element={<Shop />} />
           <Route path="product/:id" element={<Product />} />
           <Route path="cart" element={<Cart />} />
           <Route path="login" element={<Login />} />
           <Route path="admin-login" element={<Login adminOnly />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="reset-password" element={<ResetPassword />} />
           <Route path="about" element={<About />} />
 
           {/* Needs a signed-in customer */}

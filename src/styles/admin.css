@@ -10,13 +10,13 @@ body.admin-body { background: var(--color-ivory-dim); }
 }
 .admin-sidebar-brand { margin: 0 -20px 28px; padding: 24px 20px; background: var(--color-maroon); }
 .admin-sidebar .logo { color: var(--color-ivory); display: block; }
-.admin-sidebar-section { color: #bcb4a7; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 12px 12px; }
+.admin-sidebar-section { color: color-mix(in srgb, #2A2522 16%, #FDFBF7); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 12px 12px; }
 .admin-sidebar nav a {
   display: block;
   padding: 10px 12px;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #cfc8ba;
+  color: color-mix(in srgb, #2A2522 16%, #FDFBF7);
   margin-bottom: 4px;
 }
 .admin-sidebar nav a:hover, .admin-sidebar nav a.active { color: var(--color-ivory); background: rgba(255,255,255,0.07); }
@@ -44,8 +44,11 @@ body.admin-body { background: var(--color-ivory-dim); }
 
 .admin-panel-box { background: var(--color-white); border: 1px solid var(--color-border); padding: 28px; margin-bottom: 24px; }
 .admin-panel-box h3 { margin-bottom: 18px; }
+.admin-scan-qr { display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+.scan-qr-url { margin: 16px 0; overflow-wrap: anywhere; }
+.scan-qr-code { flex: 0 0 auto; padding: 12px; background: var(--color-white); border: 1px solid var(--color-border); }
 .admin-notice { padding: 11px 13px; margin-bottom: 18px; font-size: 0.88rem; }
-.admin-notice.error { color: #9b2c24; background: #fff0ed; border-left: 3px solid #c45144; }
+.admin-notice.error { color: #4A1525; background: color-mix(in srgb, #4A1525 8%, #FDFBF7); border-left: 3px solid #4A1525; }
 .admin-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; }
 
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
@@ -90,4 +93,12 @@ body.admin-body { background: var(--color-ivory-dim); }
   .admin-topbar { align-items: flex-start; flex-direction: column; gap: 14px; }
   .stat-cards { grid-template-columns: 1fr; }
   .form-grid-2 { grid-template-columns: 1fr; }
+  .admin-scan-qr { align-items: flex-start; flex-direction: column; }
+}
+
+@media print {
+  body * { visibility: hidden !important; }
+  .scan-qr-print, .scan-qr-print * { visibility: visible !important; }
+  .scan-qr-print { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; }
+  .scan-qr-controls { display: none !important; }
 }

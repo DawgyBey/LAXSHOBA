@@ -3,7 +3,7 @@ import useAsync from '../../hooks/useAsync';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import Field from '../../components/Field';
 import { COLORS, DEFAULT_CATEGORIES, FABRICS, OCCASIONS, PLACEHOLDER, SIZES } from '../../lib/constants';
-import { createProduct, getAdminCategories, getAdminProducts, removeProduct, updateProduct } from '../../lib/data';
+import { createProduct, getAdminProducts, removeProduct, updateProduct } from '../../lib/data';
 import { firstImage, formatPrice, splitList } from '../../lib/format';
 
 const EMPTY_FORM = {
@@ -144,11 +144,8 @@ export default function Products() {
   ];
 
   return (
-    <>
-      <div className="admin-topbar">
-        <h1>Products</h1>
-        <button className="btn btn-primary" onClick={() => openForm(null)}>Add Product</button>
-      </div>
+    <div>
+      <h1>Products</h1>
 
       {formOpen && (
         <div className="admin-panel-box">
@@ -217,6 +214,7 @@ export default function Products() {
       )}
 
       <div className="admin-panel-box">
+        <h3>Products List</h3>
         <table className="admin-table">
           <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>
@@ -237,6 +235,6 @@ export default function Products() {
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }

@@ -19,14 +19,15 @@ export default function ZoomImage({ src, alt, className = '', zoom = 2.2, ...pro
         '--zoom-level': zoom,
         '--zoom-x': `${position.x}%`,
         '--zoom-y': `${position.y}%`,
-        '--zoom-image': `url("${src}")`,
       }}
       onPointerEnter={() => setZoomed(true)}
       onPointerMove={updatePosition}
       onPointerLeave={() => setZoomed(false)}
     >
       <img src={src} alt={alt} {...props} />
-      <span className="zoom-image-preview" aria-hidden="true" />
+      <span className="zoom-image-preview" aria-hidden="true">
+        <img src={src} alt="" draggable="false" />
+      </span>
     </span>
   );
 }

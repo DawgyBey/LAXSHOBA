@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import useDocumentTitle from '../hooks/useDocumentTitle';
+import { safeRedirect } from '../lib/redirect';
 
 const IGNORED_ERRORS = ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'];
 
 export default function Login({ adminOnly = false }) {
   useDocumentTitle(adminOnly ? 'Admin Login — LAXSHOBHA' : 'Login — LAXSHOBHA');
-  const { signIn, signInWithGoogle, register } = useAuth();
+  const { signIn, signInWithGoogle, register, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [busy, setBusy] = useState(false);
@@ -60,7 +61,7 @@ export default function Login({ adminOnly = false }) {
     setBusy(true);
     try {
       await signInWithGoogle(credential);
-      navigate(location.state?.from || '/profile', { replace: true });
+      navigate(safeRedirect(location.state?.from, '/profile'), { replace: true });
     } catch (err) {
       console.error('Google sign-in failed:', err);
       setError(err.message || 'Google sign-in did not work. Please try again.');
@@ -78,16 +79,17 @@ export default function Login({ adminOnly = false }) {
         }
         const user = await signIn(form.email, form.password);
         if (user.role !== 'admin') {
-          throw new Error('Only authorized email accounts can access the boutique admin area.');
+          await signOut().catch(() => {});
+          throw new Error('This account does not have admin access.');
         }
-        navigate(location.state?.from || '/admin', { replace: true });
+        navigate(safeRedirect(location.state?.from, '/admin'), { replace: true });
         return;
       }
 
       if (registering) await register(form.name, form.email, form.password, { phone: form.phone, street: form.street, city: form.city });
       else await signIn(form.email, form.password);
       // Send people back to where they were headed (e.g. checkout), otherwise to their profile.
-      navigate(location.state?.from || '/profile', { replace: true });
+      navigate(safeRedirect(location.state?.from, '/profile'), { replace: true });
     } catch (err) {
       if (!IGNORED_ERRORS.includes(err.code)) {
         console.error('Email sign-in failed:', err);
@@ -102,32 +104,8 @@ export default function Login({ adminOnly = false }) {
       <div className="container">
         {adminOnly ? (
           <div className="auth-shell admin-auth-shell">
-            <aside className="admin-auth-sidebar">
-              <div className="admin-auth-brand">
-                <div className="admin-auth-brand-mark">L</div>
-                <div>
-                  <span className="admin-auth-brand-name">LAXSHOBHA</span>
-                </div>
-              </div>
-
-              <nav className="admin-auth-nav" aria-label="Admin navigation">
-                <button type="button" className="admin-auth-nav-item active">Dashboard</button>
-                <button type="button" className="admin-auth-nav-item">Homepage</button>
-                <button type="button" className="admin-auth-nav-item">Pages</button>
-                <button type="button" className="admin-auth-nav-item">Why Us</button>
-                <button type="button" className="admin-auth-nav-item">Categories</button>
-                <button type="button" className="admin-auth-nav-item">Packages</button>
-                <button type="button" className="admin-auth-nav-item">Blog</button>
-                <button type="button" className="admin-auth-nav-item">Trip Facts</button>
-                <button type="button" className="admin-auth-nav-item">Trip FAQs</button>
-              </nav>
-            </aside>
 
             <div className="admin-auth-main">
-              <header className="admin-auth-header">
-                <div className="admin-auth-header-title">Dashboard</div>
-                <button type="button" className="admin-auth-logout">Logout</button>
-              </header>
 
               <div className="admin-auth-body">
                 <div className="admin-auth-card">
@@ -180,6 +158,7 @@ export default function Login({ adminOnly = false }) {
                   {busy ? (registering ? 'Creating account...' : 'Signing in...') : (registering ? 'Create account' : 'Sign in')}
                 </button>
               </form>
+              {!registering && <p className="auth-switch"><Link to="/forgot-password">Forgot your password?</Link></p>}
               {!adminOnly && <p className="auth-switch">{registering ? 'Already have an account?' : 'New to the boutique?'}{' '}<button type="button" onClick={() => { setRegistering(!registering); setError(''); }}> {registering ? 'Sign in' : 'Create an account'}</button></p>}
             </div>
           </div>

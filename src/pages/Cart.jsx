@@ -18,12 +18,16 @@ export default function Cart() {
   return (
     <section className="section">
       <div className="container">
-        <h1 style={{ marginBottom: 32 }}>Your Cart</h1>
+        <h1 style={{ marginBottom: 32 }}>Your bag{ready && items.length > 0 ? <span className="cart-title-count"> ({items.length} {items.length === 1 ? 'item' : 'items'})</span> : null}</h1>
 
         <div className="cart-layout">
           <div>
             {ready && items.length === 0 && (
-              <p className="empty-state">Your cart is empty. <Link to="/shop">Continue shopping</Link></p>
+              <div className="empty-cart">
+                <h2>Your bag is empty</h2>
+                <p>Add a piece you love and it will wait for you here.</p>
+                <Link to="/shop" className="btn btn-primary">Start shopping</Link>
+              </div>
             )}
 
             {items.map((item, index) => (
@@ -45,8 +49,12 @@ export default function Cart() {
               <h3 style={{ marginBottom: 20 }}>Order Summary</h3>
               <div className="summary-row"><span>Subtotal</span><span>{formatPrice(total)}</span></div>
               <div className="summary-row total"><span>Total</span><span>{formatPrice(total)}</span></div>
-              <Link to="/checkout" className="btn btn-primary" style={{ width: '100%', textAlign: 'center', marginTop: 12 }}>Checkout</Link>
-              <Link to="/shop" className="btn btn-outline" style={{ width: '100%', textAlign: 'center', marginTop: 10 }}>Continue Shopping</Link>
+              <Link to="/checkout" className="btn btn-gold" style={{ width: '100%', textAlign: 'center', marginTop: 12 }}>Proceed to checkout</Link>
+              <Link to="/shop" className="btn btn-outline" style={{ width: '100%', textAlign: 'center', marginTop: 10 }}>Continue shopping</Link>
+              <ul className="summary-notes">
+                <li>Cash on delivery available</li>
+                <li>Order status visible in your account</li>
+              </ul>
             </div>
           )}
         </div>

@@ -21,8 +21,8 @@ export default function Dashboard() {
   const recent = orders.slice(0, 6);
 
   return (
-    <>
-      <div className="admin-topbar"><h1>Dashboard</h1></div>
+    <div>
+      <h1>Dashboard</h1>
 
       <div className="stat-cards">
         <div className="stat-card"><div className="label">Total Orders</div><div className="value">{show(orders.length)}</div></div>
@@ -48,6 +48,6 @@ export default function Dashboard() {
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }

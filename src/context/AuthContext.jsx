@@ -1,54 +1,47 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
   // true until the server has checked the signed session cookie.
   const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState('');
+  const role = user?.role || null; // display/routing hint only; every protected API call is authorised by the server.
 
   useEffect(() => {
     api.get('/auth/me')
-      .then(({ user: nextUser }) => { setUser(nextUser); setRole(nextUser?.role || null); })
-      .catch((err) => console.error('Could not load session:', err))
+      .then(({ user: nextUser }) => setUser(nextUser))
+      .catch((err) => { console.error('Could not load session:', err); setSessionError(err.message); })
       .finally(() => setLoading(false));
+    const onExpired = () => setUser(null);
+    window.addEventListener('auth:expired', onExpired);
+    return () => window.removeEventListener('auth:expired', onExpired);
   }, []);
 
-  async function signIn(email, password) {
-    const result = await api.post('/auth/login', { email, password });
+  const start = useCallback(async (path, payload) => {
+    const result = await api.post(path, payload);
     setUser(result.user);
-    setRole(result.user.role);
+    setSessionError('');
     return result.user;
-  }
+  }, []);
 
-  async function signInWithGoogle(credential) {
-    const result = await api.post('/auth/google', { credential });
-    setUser(result.user);
-    setRole(result.user.role);
-    return result.user;
-  }
+  const signIn = (email, password) => start('/auth/login', { email, password });
+  const signInWithGoogle = (credential) => start('/auth/google', { credential });
+  const register = (name, email, password, profile) => start('/auth/register', { name, email, password, ...profile });
 
-  async function register(name, email, password, profile) {
-    const result = await api.post('/auth/register', { name, email, password, ...profile });
-    setUser(result.user);
-    setRole(result.user.role);
-    return result.user;
-  }
-
+  // If the server cannot confirm the logout the cookie may still be valid, so keep the UI state honest and surface the error.
   async function signOut() {
-    await api.post('/auth/logout', {});
+    try {
+      await api.post('/auth/logout', {});
+    } catch (err) {
+      if (err.status !== 401) throw new Error('We could not sign you out. Please try again.');
+    }
     setUser(null);
-    setRole(null);
   }
 
-  function updateUser(nextUser) {
-    setUser(nextUser);
-    setRole(nextUser?.role || null);
-  }
-
-  const value = { user, role, isAdmin: role === 'admin', loading, signIn, signInWithGoogle, register, signOut, updateUser };
+  const value = { user, role, isAdmin: role === 'admin', loading, sessionError, signIn, signInWithGoogle, register, signOut, updateUser: setUser };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

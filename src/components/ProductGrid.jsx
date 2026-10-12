@@ -2,10 +2,12 @@ import ProductCard from './ProductCard';
 
 function SkeletonCard() {
   return (
-    <div className="product-card product-card-skeleton" aria-hidden="true">
-      <div className="product-photo" />
-      <p className="product-name skeleton-line" />
-      <p className="product-price skeleton-line skeleton-line-short" />
+    <div className="pcard pcard-skeleton" aria-hidden="true">
+      <div className="pcard-media" />
+      <div className="pcard-body">
+        <span className="skeleton-line" />
+        <span className="skeleton-line skeleton-line-short" />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 // Profile page: personal info, order history, wishlist, saved addresses.
 // All four tabs read/write real data tied to the signed-in user through the API.
 // (Route is wrapped in <RequireAuth>, so `user` is always set here.)
+import { toast } from '../lib/toast';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -231,7 +232,7 @@ export default function Profile() {
   const profileComplete = Boolean(user.name?.trim() && user.phone?.trim() && addresses.data?.length);
 
   // RequireAuth sends people to the home page as soon as they're signed out.
-  const handleSignOut = () => signOut();
+  const handleSignOut = () => signOut().catch((err) => toast(err.message, { tone: 'error' }));
 
   return (
     <section className="section profile-page">

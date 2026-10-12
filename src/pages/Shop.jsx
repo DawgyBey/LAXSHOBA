@@ -1,6 +1,7 @@
 // Shop page. Reads all published products once, then filters/sorts client-side —
 // simplest approach for a catalog this size, no server needed.
 import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import useAsync from '../hooks/useAsync';
 import useDocumentTitle from '../hooks/useDocumentTitle';
@@ -8,13 +9,13 @@ import ProductGrid from '../components/ProductGrid';
 import { COLORS, OCCASIONS, SIZES } from '../lib/constants';
 import { getCategories, getProducts } from '../lib/data';
 import { DEMO_PRODUCTS } from '../lib/constants';
-import { effectivePrice } from '../lib/format';
+import { discountPercent, effectivePrice } from '../lib/format';
 
 const EMPTY_CATEGORIES = [];
 const NO_FILTERS = {
   search: '', priceMin: '', priceMax: '',
   categories: [], sizes: [], colors: [], occasions: [],
-  hotOnly: false, sort: 'newest',
+  hotOnly: false, saleOnly: false, sort: 'newest',
 };
 
 // The catalog is fetched in one read (it's just text + URLs, cheap), but rendering
@@ -29,6 +30,11 @@ function filtersFromParams(params, categories) {
   const category = params.get('category');
   if (category && categories.some((c) => c.slug === category)) filters.categories = [category];
   if (params.get('filter') === 'hot') filters.hotOnly = true;
+  if (params.get('filter') === 'sale') filters.saleOnly = true;
+  const occasion = params.get('occasion');
+  if (occasion && OCCASIONS.includes(occasion)) filters.occasions = [occasion];
+  const q = params.get('q');
+  if (q) filters.search = q;
   return filters;
 }
 
@@ -42,6 +48,7 @@ function applyFilters(products, f) {
     if (search && !p.name.toLowerCase().includes(search)) return false;
     if (price < min || price > max) return false;
     if (f.hotOnly && !p.isHotPick) return false;
+    if (f.saleOnly && discountPercent(p) === 0) return false;
     if (f.categories.length && !f.categories.includes(p.categorySlug)) return false;
     if (f.sizes.length && !(p.sizes || []).some((s) => f.sizes.includes(s))) return false;
     if (f.colors.length && !(p.colors || []).some((c) => f.colors.includes(c))) return false;
@@ -78,6 +85,7 @@ function ShopContent({ products, categories, loading = false }) {
   const query = params.toString();
   const [filters, setFilters] = useState(() => filtersFromParams(params, categories));
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     setFilters(filtersFromParams(params, categories));
@@ -100,14 +108,51 @@ function ShopContent({ products, categories, loading = false }) {
   useEffect(() => setVisibleCount(PAGE_SIZE), [filters]);
   const visibleResults = useMemo(() => results.slice(0, visibleCount), [results, visibleCount]);
   const mainCategories = categories.filter((c) => !c.parentId).map((c) => ({ value: c.slug, label: c.name }));
+  const activeFilters = [
+    ...(filters.search ? [{ key: 'search', value: filters.search, label: `Search: ${filters.search}` }] : []),
+    ...filters.categories.map((value) => ({ key: 'categories', value, label: mainCategories.find((category) => category.value === value)?.label || value })),
+    ...filters.sizes.map((value) => ({ key: 'sizes', value, label: `Size: ${value}` })),
+    ...filters.colors.map((value) => ({ key: 'colors', value, label: `Color: ${value}` })),
+    ...filters.occasions.map((value) => ({ key: 'occasions', value, label: value })),
+    ...(filters.priceMin ? [{ key: 'priceMin', value: filters.priceMin, label: `From ${filters.priceMin}` }] : []),
+    ...(filters.priceMax ? [{ key: 'priceMax', value: filters.priceMax, label: `Up to ${filters.priceMax}` }] : []),
+    ...(filters.hotOnly ? [{ key: 'hotOnly', value: true, label: 'Hot picks' }] : []),
+    ...(filters.saleOnly ? [{ key: 'saleOnly', value: true, label: 'On sale' }] : []),
+  ];
+
+  function removeFilter(key, value) {
+    if (['categories', 'sizes', 'colors', 'occasions'].includes(key)) {
+      set(key, filters[key].filter((selected) => selected !== value));
+      return;
+    }
+    set(key, key === 'hotOnly' || key === 'saleOnly' ? false : '');
+  }
 
   return (
     <section className="section">
       <div className="container">
-        <h1 style={{ marginBottom: 28 }}>Shop</h1>
+        <div className="shop-heading">
+          <div>
+            <h1>{filters.saleOnly ? 'The sale' : filters.search ? `Results for “${filters.search}”` : 'Shop all pieces'}</h1>
+            <p>{filters.saleOnly ? 'Selected pieces at lower prices.' : 'Sarees, kurtas and festive wear, chosen with care.'}</p>
+          </div>
+        </div>
+
+        {mainCategories.length > 0 && (
+          <div className="pill-rail" role="group" aria-label="Quick categories">
+            <button type="button" className={`pill${filters.categories.length === 0 ? ' active' : ''}`} onClick={() => set('categories', [])}>All</button>
+            {mainCategories.map((c) => (
+              <button type="button" key={c.value} className={`pill${filters.categories.includes(c.value) ? ' active' : ''}`} onClick={() => set('categories', filters.categories.includes(c.value) ? [] : [c.value])}>{c.label}</button>
+            ))}
+          </div>
+        )}
 
         <div className="shop-layout">
-          <aside className="filter-panel">
+          <button className="filter-toggle" type="button" aria-expanded={mobileFiltersOpen} aria-controls="shop-filters" onClick={() => setMobileFiltersOpen((open) => !open)}>
+            <span>{mobileFiltersOpen ? 'Hide filters' : 'Filters'}</span><span className="filter-toggle-count">{activeFilters.length || '＋'}</span>
+          </button>
+          <aside id="shop-filters" className={`filter-panel${mobileFiltersOpen ? ' is-open' : ''}`}>
+            <div className="filter-panel-head"><h2>Refine</h2><button type="button" onClick={clearFilters}>Reset all</button></div>
             <h4>Search</h4>
             <div className="field">
               <input type="text" placeholder="Search products" value={filters.search} onChange={(e) => set('search', e.target.value)} />
@@ -130,6 +175,9 @@ function ShopContent({ products, categories, loading = false }) {
             <label className="filter-option">
               <input type="checkbox" checked={filters.hotOnly} onChange={(e) => set('hotOnly', e.target.checked)} /> Hot Picks only
             </label>
+            <label className="filter-option">
+              <input type="checkbox" checked={filters.saleOnly} onChange={(e) => set('saleOnly', e.target.checked)} /> On sale
+            </label>
 
             <div style={{ marginTop: 24 }}>
               <button className="btn btn-outline btn-small" onClick={clearFilters}>Clear filters</button>
@@ -150,6 +198,10 @@ function ShopContent({ products, categories, loading = false }) {
                 <option value="popular">Most Popular</option>
               </select>
             </div>
+            {activeFilters.length > 0 && <div className="active-filters" aria-label="Active filters">
+              {activeFilters.map((filter) => <button type="button" className="filter-chip" key={`${filter.key}-${filter.value}`} onClick={() => removeFilter(filter.key, filter.value)}>{filter.label}<span aria-hidden="true">×</span></button>)}
+              <button type="button" className="clear-active-filters" onClick={clearFilters}>Clear all</button>
+            </div>}
             <ProductGrid
               products={visibleResults}
               emptyMessage="No products match those filters."
@@ -157,7 +209,7 @@ function ShopContent({ products, categories, loading = false }) {
               loading={loading}
             />
             {visibleCount < results.length && !loading && (
-              <div style={{ textAlign: 'center', marginTop: 32 }}>
+              <div className="load-more-wrap">
                 <button className="btn btn-outline" onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}>
                   Load more ({results.length - visibleCount} more)
                 </button>
@@ -166,6 +218,9 @@ function ShopContent({ products, categories, loading = false }) {
           </div>
         </div>
       </div>
+      <AnimatePresence>
+        {mobileFiltersOpen && <motion.button className="filter-dismiss" type="button" aria-label="Close filters" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileFiltersOpen(false)} />}
+      </AnimatePresence>
     </section>
   );
 }

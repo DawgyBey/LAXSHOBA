@@ -12,7 +12,9 @@ export const SOCIAL_LINKS = {
   instagram: 'https://www.instagram.com/laxshobha',
 };
 
-export const DEFAULT_HERO_IMAGE = '/photos/hero-image.png';
+// Put an editorial photo of a model in /public/photos and point this at it,
+// or set the Hero Image URL in Admin > Homepage & Settings.
+export const DEFAULT_HERO_IMAGE = '/images/placeholder-hero.jpeg';
 
 export const DEMO_PRODUCTS = [
   {
@@ -194,6 +196,7 @@ export const NAV_LINKS = [
   { label: 'New Arrivals', to: '/shop?filter=new', optional: true },
   { label: 'Hot Picks', to: '/shop?filter=hot', optional: true },
   { label: 'About', to: '/about' },
+  { label: 'Sale', to: '/shop?filter=sale', highlight: true },
 ];
 
 export const DEFAULT_HERO = {
@@ -205,3 +208,31 @@ export const DEFAULT_ABOUT_TEXT =
   'This boutique began at home, with a love of sarees passed down and worn on every ' +
   'occasion that mattered. Every piece here has been chosen the same way — by hand, ' +
   'by eye, and by heart.';
+
+
+// ---- Storefront copy (edit these to change the banners without touching components) ----
+// Set a number (for example 5000) to show "Complimentary shipping on orders over Rs. 5,000"
+// in the top bar. Leave as null until you have decided the real offer.
+export const FREE_SHIPPING_THRESHOLD = null;
+
+export const ANNOUNCEMENTS = [
+  'Hand-selected traditional wear',
+  'Cash on delivery available at checkout',
+];
+
+export const TRUST_POINTS = [
+  { icon: 'cod', title: 'Cash on delivery', text: 'Pay when your order arrives.' },
+  { icon: 'track', title: 'Track your orders', text: 'See every order status in your account.' },
+  { icon: 'hand', title: 'Hand-picked pieces', text: 'Chosen and worn first by the founder.' },
+  { icon: 'lock', title: 'One-tap sign in', text: 'Log in quickly with Google.' },
+];
+
+// Occasion tiles. `image` is any photo path or URL; `position` chooses which part is kept when cropped.
+// Swap these for lifestyle photos of your own (put them in /public/photos).
+export const OCCASION_STYLES = {
+  Everyday: { image: '/photos/olive-bloom.jpg', position: '50% 38%', note: 'Easy, all-day dressing' },
+  Office: { image: '/photos/noir-geometric.jpg', position: '50% 40%', note: 'Quietly polished' },
+  Festive: { image: '/photos/coral-garden.jpg', position: '46% 45%', note: 'Made for celebrations' },
+  Wedding: { image: '/photos/crimson-garden.jpg', position: '50% 42%', note: 'Dressed for the day' },
+  Party: { image: '/photos/wine-geometric.jpg', position: '50% 40%', note: 'Ready for the evening' },
+};

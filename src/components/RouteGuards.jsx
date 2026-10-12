@@ -14,7 +14,7 @@ export function RequireAuth() {
   if (loading) return <Loading />;
   if (user) return <Outlet />;
   // Otherwise remember the page so Login can send the person back after signing in.
-  return <Navigate to={wasSignedIn.current ? '/' : '/login'} replace state={{ from: location.pathname }} />;
+  return <Navigate to={wasSignedIn.current ? '/' : '/login'} replace state={{ from: `${location.pathname}${location.search}` }} />;
 }
 
 // Wrap routes under /admin. Signed-out -> login, signed-in non-admin -> home.

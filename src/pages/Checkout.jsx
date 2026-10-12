@@ -76,7 +76,7 @@ export default function Checkout() {
       navigate(`/profile?order=${order.id}`);
     } catch (err) {
       console.error('Order failed:', err);
-      alert('Something went wrong placing your order. Please try again.');
+      alert(err.status === 409 || err.status === 400 ? err.message : 'Something went wrong placing your order. Please try again.');
       setPlacing(false);
     }
   }

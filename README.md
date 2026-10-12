@@ -34,3 +34,11 @@ Create one Render Web Service with:
 
 Set an email in `ADMIN_EMAILS` before registering the shop owner's account. Existing Firebase data is not migrated automatically; export and transform it into MongoDB before production cutover.
 # LAXSHOBA
+
+## Storefront look and feel
+
+The vibrant e-commerce styling lives in `src/styles/commerce.css` (loaded last) and the colours in `src/styles/tokens.css`.
+
+- Announcement bar messages, the four trust points and the occasion tiles are plain lists at the bottom of `src/lib/constants.js`.
+- Sale badges, "Only N left" and the sale section are calculated from each product's real `price`, `salePrice` and `stock`.
+- Wishlist hearts and quick-add on product cards use the same API calls as the product page.

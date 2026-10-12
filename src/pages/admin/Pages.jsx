@@ -81,11 +81,8 @@ export default function Pages() {
   ];
 
   return (
-    <>
-      <div className="admin-topbar">
-        <div><h1>Pages & SEO</h1><p className="eyebrow-plain">Manage page copy, search metadata, and publishing.</p></div>
-        <button className="btn btn-primary" onClick={() => openForm(null)}>Add Page</button>
-      </div>
+    <div>
+      <h1>Pages & SEO</h1>
 
       {notice && <p className="admin-notice error" role="alert">{notice.text}</p>}
 
@@ -127,6 +124,6 @@ export default function Pages() {
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }

@@ -2,7 +2,11 @@
 
 export const effectivePrice = (p) => p.salePrice || p.price;
 
-export const formatPrice = (n) => `Rs. ${n}`;
+export const formatPrice = (n) => `Rs. ${Number(n).toLocaleString('en-IN')}`;
+
+// 3490 -> 2990 gives 14. Returns 0 when the product isn't on sale.
+export const discountPercent = (p) =>
+  p.salePrice && p.price > p.salePrice ? Math.round((1 - p.salePrice / p.price) * 100) : 0;
 
 // "Order #A1B2C3D4" style short id from a Mongo document id.
 export const shortOrderId = (id) => `#${id.slice(0, 8).toUpperCase()}`;
