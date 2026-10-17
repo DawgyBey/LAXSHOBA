@@ -11,6 +11,7 @@ import useDocumentTitle from '../hooks/useDocumentTitle';
 import Field from '../components/Field';
 import { getAddresses, saveOrder } from '../lib/data';
 import { formatPrice } from '../lib/format';
+import { toast } from '../lib/toast';
 
 const PAYMENT_OPTIONS = [
   { value: 'cod', label: 'Cash on Delivery' },
@@ -54,7 +55,7 @@ export default function Checkout() {
     const city = form.city.trim();
 
     if (!name || !phone || !street || !city) {
-      alert('Please fill in your contact info and delivery address.');
+      toast('Please fill in your contact info and delivery address.', { tone: 'error' });
       return;
     }
 
@@ -76,7 +77,7 @@ export default function Checkout() {
       navigate(`/profile?order=${order.id}`);
     } catch (err) {
       console.error('Order failed:', err);
-      alert(err.status === 409 || err.status === 400 ? err.message : 'Something went wrong placing your order. Please try again.');
+      toast(err.status === 409 || err.status === 400 ? err.message : 'Something went wrong placing your order. Please try again.', { tone: 'error' });
       setPlacing(false);
     }
   }
@@ -84,21 +85,22 @@ export default function Checkout() {
   return (
     <section className="section">
       <div className="container">
-        <h1 style={{ marginBottom: 32 }}>Checkout</h1>
+        <h1 className="page-title">Checkout</h1>
 
         <div className="cart-layout">
-          <div>
-            <h3 style={{ marginBottom: 16 }}>1. Contact Information</h3>
+          <div className="checkout-form">
+            <h3>1. Contact Information</h3>
             <Field label="Full Name" type="text" {...bind('name')} />
             <Field label="Email" type="email" {...bind('email')} />
             <Field label="Phone" type="tel" {...bind('phone')} />
 
-            <h3 style={{ margin: '28px 0 16px' }}>2. Delivery Address</h3>
+            <h3>2. Delivery Address</h3>
             {savedAddresses.length > 0 && (
               <select
+                className="checkout-select"
+                aria-label="Use a saved address"
                 value={savedAddressId}
                 onChange={(e) => chooseSavedAddress(e.target.value)}
-                style={{ marginBottom: 14, padding: 12, border: '1px solid var(--color-border)', width: '100%' }}
               >
                 <option value="">Enter a new address below</option>
                 {savedAddresses.map((a) => (
@@ -109,21 +111,21 @@ export default function Checkout() {
             <Field label="Street Address" type="text" {...bind('street')} />
             <Field label="City" type="text" {...bind('city')} />
 
-            <h3 style={{ margin: '28px 0 16px' }}>3. Payment Method</h3>
+            <h3>3. Payment Method</h3>
             {PAYMENT_OPTIONS.map((o) => (
-              <div
+              <label
                 key={o.value}
                 className={`payment-option${payment === o.value ? ' selected' : ''}`}
-                onClick={() => setPayment(o.value)}
               >
-                <input type="radio" name="payment" checked={payment === o.value} onChange={() => setPayment(o.value)} /> {o.label}
-              </div>
+                <input type="radio" name="payment" value={o.value} checked={payment === o.value} onChange={() => setPayment(o.value)} />
+                <span>{o.label}</span>
+              </label>
             ))}
-            <p className="eyebrow-plain">Online payment can be added here once a payment gateway is connected.</p>
+            <p className="field-note">Online payment can be added here once a payment gateway is connected.</p>
           </div>
 
           <div className="summary-box">
-            <h3 style={{ marginBottom: 20 }}>Order Summary</h3>
+            <h3>Order Summary</h3>
             <div>
               {ready && items.length === 0 && <p className="empty-state">Your cart is empty.</p>}
               {items.map((item, i) => (
@@ -135,8 +137,7 @@ export default function Checkout() {
             </div>
             <div className="summary-row total"><span>Total</span><span>{formatPrice(total)}</span></div>
             <button
-              className="btn btn-primary"
-              style={{ width: '100%', marginTop: 16 }}
+              className="btn btn-primary btn-block"
               disabled={!ready || items.length === 0 || placing}
               onClick={placeOrder}
             >

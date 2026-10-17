@@ -97,7 +97,7 @@ export default function ProductCard({ product, showBadge = false }) {
               </div>
             )}
             <button type="button" className="pcard-quick-btn" aria-label={sizesOpen ? 'Select a size' : `Add ${product.name} to bag`} disabled={busy || !ready} onClick={onQuickAdd} aria-expanded={sizes.length ? sizesOpen : undefined}>
-              {sizesOpen ? 'Select size' : <span aria-hidden="true">+</span>}
+              {sizesOpen ? 'Select size' : 'Quick add'}
             </button>
           </div>
         )}

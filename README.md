@@ -1,4 +1,4 @@
-# Boutique
+# Boutique API and build
 
 React storefront with an Express API, MongoDB data storage, and signed HTTP-only sessions.
 
@@ -33,12 +33,13 @@ Create one Render Web Service with:
 - Product and homepage images use durable hosted URLs. Render's local filesystem is ephemeral; connect object storage such as Cloudinary or S3 before adding binary uploads.
 
 Set an email in `ADMIN_EMAILS` before registering the shop owner's account. Existing Firebase data is not migrated automatically; export and transform it into MongoDB before production cutover.
-# LAXSHOBA
+# LAXSHOBHA storefront
 
 ## Storefront look and feel
 
-The vibrant e-commerce styling lives in `src/styles/commerce.css` (loaded last) and the colours in `src/styles/tokens.css`.
+All styling lives in `src/styles/`: `tokens.css` (colours, the single typeface, type scale, spacing), `base.css` (reset and shared primitives), `storefront.css` and `admin.css`. No sheet other than `tokens.css` declares a colour hex or a font family.
 
 - Announcement bar messages, the four trust points and the occasion tiles are plain lists at the bottom of `src/lib/constants.js`.
 - Sale badges, "Only N left" and the sale section are calculated from each product's real `price`, `salePrice` and `stock`.
+- Typography is one family (Inter, weights 400/500/600). To change it, edit `--font` in `tokens.css` and the Google Fonts `<link>` in `index.html`.
 - Wishlist hearts and quick-add on product cards use the same API calls as the product page.

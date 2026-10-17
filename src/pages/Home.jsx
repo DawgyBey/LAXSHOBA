@@ -2,7 +2,6 @@
 // controls them). Only the section labels and trust copy live in the code.
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import useAsync from '../hooks/useAsync';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import useHomepageContent from '../hooks/useHomepageContent';
@@ -39,8 +38,6 @@ function Section({ title, note, viewAllTo, children }) {
     </section>
   );
 }
-
-const rise = { hidden: { opacity: 0, y: 22 }, visible: { opacity: 1, y: 0 } };
 
 export default function Home() {
   const [newsletterStatus, setNewsletterStatus] = useState('');
@@ -92,14 +89,14 @@ export default function Home() {
     <main className="home-page">
       <section className="sf-hero">
         <div className="container sf-hero-grid">
-          <motion.div className="sf-hero-copy" initial="hidden" animate="visible" transition={{ staggerChildren: 0.1, delayChildren: 0.1 }}>
-            <motion.p className="sf-hero-kicker" variants={rise}>The new collection</motion.p>
-            <motion.h1 className="text-balance" variants={rise}>{content?.heroTitle || DEFAULT_HERO.title}</motion.h1>
-            <motion.p className="sf-hero-text" variants={rise}>{content?.heroDescription || DEFAULT_HERO.text}</motion.p>
-            <motion.div className="sf-hero-actions" variants={rise}>
+          <div className="sf-hero-copy">
+            <p className="sf-hero-kicker">The new collection</p>
+            <h1 className="text-balance">{content?.heroTitle || DEFAULT_HERO.title}</h1>
+            <p className="sf-hero-text">{content?.heroDescription || DEFAULT_HERO.text}</p>
+            <div className="sf-hero-actions">
               <Link to="/shop?filter=new" className="btn btn-ghost-light">Discover the collection</Link>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
 
           <div className="sf-hero-media">
             <div className="sf-arch">

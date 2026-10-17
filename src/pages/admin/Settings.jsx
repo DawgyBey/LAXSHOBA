@@ -6,6 +6,7 @@ import useHomepageContent from '../../hooks/useHomepageContent';
 import { getAdminProducts, saveHomepage } from '../../lib/data';
 import Field from '../../components/Field';
 import Loading from '../../components/Loading';
+import { toast } from '../../lib/toast';
 
 function ImageField({ label, id, value, onChange }) {
   return (
@@ -56,10 +57,10 @@ export default function Settings() {
         scanDescription: form.scanDescription.trim(),
         scanProductIds,
       });
-      alert('Homepage updated.');
+      toast('Homepage updated.');
     } catch (err) {
       console.error('Saving homepage failed:', err);
-      alert('Could not save the homepage. Please try again.');
+      toast('Could not save the homepage. Please try again.', { tone: 'error' });
     }
     setSaving(false);
   }

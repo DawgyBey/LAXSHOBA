@@ -6,11 +6,11 @@ import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import App from './App';
 
+// One cascade, one direction: values, then primitives, then each surface.
 import './styles/tokens.css';
-import './styles/style.css';
-import './styles/shop.css';
+import './styles/base.css';
+import './styles/storefront.css';
 import './styles/admin.css';
-import './styles/commerce.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

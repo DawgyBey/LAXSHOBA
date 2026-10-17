@@ -19,21 +19,21 @@ import { toast } from '../lib/toast';
 
 function OptionGroup({ title, values, selected, onSelect }) {
   if (values.length === 0) return null;
+  const groupId = `option-${title.toLowerCase()}`;
   return (
-    <div className="option-group">
-      <h4>{title}</h4>
+    <div className="option-group" role="group" aria-labelledby={groupId}>
+      <h4 id={groupId}>{title}</h4>
       <div className="option-pills">
         {values.map((v) => (
-          <span
+          <button
             key={v}
-            role="button"
-            tabIndex={0}
+            type="button"
             className={`option-pill${v === selected ? ' selected' : ''}`}
+            aria-pressed={v === selected}
             onClick={() => onSelect(v)}
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onSelect(v))}
           >
             {v}
-          </span>
+          </button>
         ))}
       </div>
     </div>
@@ -79,7 +79,7 @@ function ProductDetail({ product }) {
       navigate(goToCheckout ? '/checkout' : '/cart');
     } catch (err) {
       console.error('Add to cart failed:', err);
-      alert('Could not add this to your cart. Please try again.');
+      toast('Could not add this to your cart. Please try again.', { tone: 'error' });
       setBusy(false);
     }
   }
@@ -171,7 +171,7 @@ function ProductDetail({ product }) {
       {inStock && (
         <div className="sticky-buy">
           <div className="sticky-buy-price"><Price product={product} /></div>
-          <button className="btn btn-primary" disabled={busy || !ready} onClick={() => addToCart(false)}>Add to bag</button>
+          <button className="btn btn-primary" disabled={!inStock || busy || !ready} onClick={() => addToCart(false)}>Add to bag</button>
         </div>
       )}
     </section>

@@ -121,9 +121,9 @@ function PersonalInfoTab({ user, updateUser }) {
         <label className="crop-control">Vertical position <input type="range" min="0" max="100" value={cropY} onChange={(e) => setCropY(Number(e.target.value))} /></label>
         <div className="crop-actions"><button className="btn btn-outline" type="button" onClick={cancelCrop}>Cancel</button><button className="btn btn-primary" type="button" onClick={saveCroppedPhoto} disabled={saving}>{saving ? 'Saving...' : 'Use this picture'}</button></div>
       </div>}
-      <Field label="Name *" type="text" required style={{ maxWidth: 400 }} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-      <Field label="Email *" type="email" required style={{ maxWidth: 400 }} value={p.email || user.email || ''} disabled readOnly />
-      <Field label="Phone *" type="tel" required style={{ maxWidth: 400 }} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+      <Field label="Name *" type="text" required className="field-narrow" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+      <Field label="Email *" type="email" required className="field-narrow" value={p.email || user.email || ''} disabled readOnly />
+      <Field label="Phone *" type="tel" required className="field-narrow" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
       <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</button>
     </div>
   );
@@ -192,30 +192,32 @@ function AddressesTab({ user }) {
       addresses.reload();
     } catch (err) {
       console.error('Removing address failed:', err);
-      alert('Could not remove that address. Please try again.');
+      toast('Could not remove that address. Please try again.', { tone: 'error' });
     }
   }
 
   const list = addresses.data ?? [];
   return (
     <div className="profile-panel">
-      <div style={{ marginBottom: 32 }}>
+      <div className="address-list">
         {!addresses.loading && list.length === 0 && <p className="empty-state">No saved addresses.</p>}
         {list.map((a) => (
           <div className="address-row" key={a.id}>
-            <strong>{a.label}</strong>
-            <p className="eyebrow-plain">{a.street}, {a.city} · {a.phone}</p>
-            <button className="btn btn-outline btn-small" style={{ marginTop: 10 }} onClick={() => removeAddress(a.id)}>Remove</button>
+            <div>
+              <strong>{a.label}</strong>
+              <p className="eyebrow-plain">{a.street}, {a.city} · {a.phone}</p>
+            </div>
+            <button className="btn btn-outline btn-small" onClick={() => removeAddress(a.id)}>Remove</button>
           </div>
         ))}
       </div>
 
-      <h3 style={{ marginBottom: 16 }}>Add New Address</h3>
+      <h3 className="profile-subhead">Add New Address</h3>
       {notice && <p className={`profile-notice ${notice.type}`} role="status">{notice.text}</p>}
-      <Field label="Label (optional)" type="text" style={{ maxWidth: 400 }} {...bind('label')} />
-      <Field label="Street Address *" type="text" required style={{ maxWidth: 400 }} {...bind('street')} />
-      <Field label="City *" type="text" required style={{ maxWidth: 400 }} {...bind('city')} />
-      <Field label="Phone *" type="tel" required style={{ maxWidth: 400 }} {...bind('phone')} />
+      <Field label="Label (optional)" type="text" className="field-narrow" {...bind('label')} />
+      <Field label="Street Address *" type="text" required className="field-narrow" {...bind('street')} />
+      <Field label="City *" type="text" required className="field-narrow" {...bind('city')} />
+      <Field label="Phone *" type="tel" required className="field-narrow" {...bind('phone')} />
       <button className="btn btn-outline" onClick={addAddress}>Save Address</button>
     </div>
   );

@@ -3,8 +3,9 @@ import useAsync from '../../hooks/useAsync';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import Field from '../../components/Field';
 import { COLORS, DEFAULT_CATEGORIES, FABRICS, OCCASIONS, PLACEHOLDER, SIZES } from '../../lib/constants';
-import { createProduct, getAdminProducts, removeProduct, updateProduct } from '../../lib/data';
+import { createProduct, getAdminCategories, getAdminProducts, removeProduct, updateProduct } from '../../lib/data';
 import { firstImage, formatPrice, splitList } from '../../lib/format';
+import { toast } from '../../lib/toast';
 
 const EMPTY_FORM = {
   name: '', category: '', price: '', salePrice: '', stock: '', fabric: '', description: '', review: '',
@@ -117,7 +118,7 @@ export default function Products() {
       products.reload();
     } catch (err) {
       console.error('Saving product failed:', err);
-      alert('Could not save this product. Please try again.');
+      toast('Could not save this product. Please try again.', { tone: 'error' });
     }
     setSaving(false);
   }
@@ -129,7 +130,7 @@ export default function Products() {
       products.reload();
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Could not delete this product. Please try again.');
+      toast('Could not delete this product. Please try again.', { tone: 'error' });
     }
   }
 

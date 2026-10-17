@@ -20,6 +20,22 @@ export default function Header() {
   // Close the mobile menu whenever the user navigates.
   useEffect(() => setMenuOpen(false), [location.key]);
 
+  // Keep the drawer predictable on small screens: the page should not scroll
+  // behind it, and keyboard users can dismiss it without hunting for the menu.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
+
   let accountLabel = '';
   if (!loading) accountLabel = user ? (user.name ? user.name.split(' ')[0] : 'Profile') : 'Login';
 
@@ -32,7 +48,7 @@ export default function Header() {
   return (
     <header className="hdr">
       <div className="container hdr-top">
-        <button className="hdr-menu" type="button" aria-label="Menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>
+        <button className="hdr-menu" type="button" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-controls="main-navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
             <path d="M4 7h16M4 12h16M4 17h16" />
           </svg>
@@ -73,7 +89,7 @@ export default function Header() {
         </div>
       </div>
 
-      <nav className={`hdr-nav${menuOpen ? ' is-open' : ''}`} aria-label="Main">
+      <nav id="main-navigation" className={`hdr-nav${menuOpen ? ' is-open' : ''}`} aria-label="Main">
         <ul className="container">
           {NAV_LINKS.map((link) => (
             <li key={link.to}>

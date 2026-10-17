@@ -1,221 +1,178 @@
 /* ==========================================================================
-   Design Tokens — LaxShobha Redesign
-   Bold, distinctive system for a portfolio centerpiece
+   tokens.css — the only place a value is defined.
+
+   Four colours carry the brand: maroon, ivory, ink (espresso) and gold.
+   Everything else in this file is either a measured tint of those four, a
+   type/spacing step, or a semantic name that points at one of them.
+
+   Contrast policy, measured against WCAG 2.1:
+     gold #C5A059 on ivory is 2.38:1 — decoration, fills and borders only,
+     never small text. Where gold-toned text sits on a light surface use
+     --color-gold-text (6.14:1). On maroon use --color-gold-on-dark (8.93:1).
+     Status colours are always shipped with a word or an icon, never alone.
+
+   No sheet below this one may declare a hex value or a font family.
    ========================================================================== */
+
 :root {
-  /* --- Color Palette: Deep, dramatic with electric accents --- */
-  --color-void: #4A1525;
-  --color-void-soft: #4A1525;
-  --color-void-lifted: #4A1525;
-  --color-charcoal: #2A2522;
-  --color-charcoal-lifted: #2A2522;
+  color-scheme: light;
 
-  --color-cream: #FDFBF7;
-  --color-cream-warm: color-mix(in srgb, #4A1525 6%, #FDFBF7);
-  --color-cream-dim: color-mix(in srgb, #4A1525 14%, #FDFBF7);
-  --color-parchment: color-mix(in srgb, #4A1525 6%, #FDFBF7);
-  --color-sand: color-mix(in srgb, #4A1525 14%, #FDFBF7);
+  /* --- Brand ------------------------------------------------------------ */
+  --maroon: #4A1525;
+  --ivory: #FDFBF7;
+  --ink: #2A2522;
+  --gold: #C5A059;
 
-  --color-gold: #C5A059;
-  --color-gold-bright: #C5A059;
-  --color-gold-deep: #C5A059;
-  --color-gold-glow: rgba(245, 168, 0, 0.35);
-  --color-gold-glow-strong: rgba(212, 168, 67, 0.55);
+  /* Gold variants that are safe for text. */
+  --color-gold-text: #7A5A1C;    /* 6.14:1 on ivory */
+  --color-gold-on-dark: #E3C68D; /* 8.93:1 on maroon, 9.18:1 on ink */
 
-  --color-coral: #4A1525;
-  --color-coral-light: #4A1525;
-  --color-coral-glow: rgba(216, 27, 96, 0.35);
+  /* --- Neutral tints (precomputed, so no color-mix() dependency) -------- */
+  --ink-70: #696562;   /* 5.58:1 on ivory — body copy on light */
+  --ink-50: #94908D;   /* 3.06:1 on ivory — interactive borders, icons */
+  --maroon-04: #F6F2EF;
+  --maroon-06: #F2EDEA;
+  --maroon-08: #EFE9E6;
+  --maroon-12: #E8DFDE;
+  --maroon-20: #D9CDCD;  /* hairline rules */
+  --maroon-88: #E8DFDE;
+  --maroon-lift: #591A32; /* hover on maroon fills */
+  --sidebar-text: #C0BDBB;       /* nav text on the dark admin sidebar */
+  --sidebar-text-muted: #B3B0AE; /* section labels, footer on the dark sidebar */
+  --color-live-on-dark: #5CC08A; /* "live" dot on dark */
+  --color-live: #2E8F5F;         /* "live" dot on light */
+  --maroon-deep: #39101F;
 
-  --color-emerald: #4A1525;
-  --color-emerald-light: #4A1525;
-  --color-emerald-glow: rgba(45, 155, 110, 0.35);
+  /* --- Text on dark ----------------------------------------------------- */
+  --ivory-62: #B9A4A7;  /* 6.27:1 on maroon — secondary text */
+  --ivory-78: #D6C8C9;  /* 9.10:1 on maroon — body copy on maroon */
 
-  --color-violet: #4A1525;
-  --color-violet-light: #4A1525;
-  --color-violet-glow: rgba(139, 92, 246, 0.35);
+  /* --- Semantic surface + text ------------------------------------------ */
+  --color-bg: var(--ivory);
+  --color-bg-alt: var(--maroon-06);
+  --color-bg-sunken: var(--maroon-08);
+  --color-bg-dark: var(--maroon);
+  --color-surface: #FFFFFF;
 
-  --color-cyan: #4A1525;
-  --color-cyan-light: #4A1525;
-  --color-cyan-glow: rgba(6, 182, 212, 0.35);
+  --color-text: var(--ink);
+  --color-text-soft: var(--ink-70);
+  --color-text-muted: #6E6966;   /* 5.24:1 on ivory */
+  --color-text-faint: #8A857F;   /* placeholders and large text only */
+  --color-text-on-dark: var(--ivory);
+  --color-text-on-dark-soft: var(--ivory-78);
 
-  --color-pearl: rgba(255, 255, 255, 0.98);
-  --color-pearl-dim: rgba(255, 255, 255, 0.7);
-  --color-pearl-faint: rgba(255, 255, 255, 0.4);
-  --color-pearl-whisper: rgba(255, 255, 255, 0.12);
+  --color-border: var(--maroon-20);
+  --color-border-strong: var(--ink-50);
+  --color-border-on-dark: rgba(253, 251, 247, 0.2);
 
-  --color-ink: #2A2522;
-  --color-ink-soft: #2A2522;
+  --color-accent: var(--maroon);
+  --color-accent-hover: var(--maroon-lift);
 
-  /* Semantic aliases */
-  --color-bg: var(--color-cream);
-  --color-bg-alt: var(--color-cream-warm);
-  --color-bg-dark: var(--color-void);
-  --color-bg-card: var(--color-pearl);
-  --color-border: var(--color-sand);
-  --color-border-subtle: var(--color-cream-dim);
-  --color-text: var(--color-ink);
-  --color-text-soft: var(--color-charcoal);
-  --color-text-muted: var(--color-charcoal-lifted);
-  --color-text-on-dark: var(--color-cream);
-  --color-accent: var(--color-gold);
-  --color-accent-glow: var(--color-gold-glow);
-  --color-accent-hover: var(--color-gold-bright);
-  --color-danger: var(--color-coral);
+  /* --- Status ----------------------------------------------------------- */
+  --color-success: #1E6B45;  /* 6.26:1 */
+  --color-warning: #7A4A00;  /* 7.24:1 */
+  --color-error: #A32027;    /* 7.27:1 */
+  --color-info: #1D4E7D;     /* 8.33:1 */
 
-  /* Accent variants for variety */
-  --accent-1: var(--color-gold);
-  --accent-1-glow: var(--color-gold-glow);
-  --accent-2: var(--color-coral);
-  --accent-2-glow: var(--color-coral-glow);
-  --accent-3: var(--color-emerald);
-  --accent-3-glow: var(--color-emerald-glow);
-  --accent-4: var(--color-violet);
-  --accent-4-glow: var(--color-violet-glow);
-  --accent-5: var(--color-cyan);
-  --accent-5-glow: var(--color-cyan-glow);
+  --color-success-bg: #E7EDE5;
+  --color-warning-bg: #F0E9DE;
+  --color-error-bg: #F4E5E2;
+  --color-info-bg: #E7EAEB;
 
-  /* --- Typography: Expressive, editorial --- */
-  --font-display: 'Cormorant Garamond', Georgia, serif;
-  --font-display-alt: 'Playfair Display', Georgia, serif;
-  --font-body: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --color-on-error: #FFD0D3;      /* error text sitting on maroon */
 
-  /* Fluid type scale — dramatic range */
-  --text-xs: clamp(0.65rem, 0.6rem + 0.25vw, 0.75rem);
-  --text-sm: clamp(0.8rem, 0.75rem + 0.25vw, 0.875rem);
-  --text-base: clamp(0.95rem, 0.875rem + 0.375vw, 1rem);
-  --text-lg: clamp(1.1rem, 1rem + 0.5vw, 1.25rem);
-  --text-xl: clamp(1.35rem, 1.2rem + 0.75vw, 1.5rem);
-  --text-2xl: clamp(1.75rem, 1.5rem + 1.25vw, 2.25rem);
-  --text-3xl: clamp(2.25rem, 1.8rem + 2.25vw, 3.5rem);
-  --text-4xl: clamp(3rem, 2.25rem + 3.75vw, 5.5rem);
-  --text-5xl: clamp(4rem, 3rem + 5vw, 7.5rem);
-  --text-6xl: clamp(5rem, 4rem + 6vw, 10rem);
+  /* --- Focus ------------------------------------------------------------ */
+  --color-focus: var(--maroon);
+  --color-focus-halo: var(--ivory);
 
-  /* --- Spacing --- */
+  /* --- Type ------------------------------------------------------------- */
+  /* One family for the whole site. Hierarchy comes from size, weight and
+     spacing, not from mixing typefaces. Loaded at 400 / 500 / 600 only. */
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Fluid scale. Ratio tightens as size grows so display type stays compact. */
+  --text-2xs: 0.6875rem;                                  /* 11px — labels  */
+  --text-xs: 0.75rem;                                     /* 12px           */
+  --text-sm: 0.8125rem;                                   /* 13px           */
+  --text-base: 0.9375rem;                                 /* 15px           */
+  --text-md: 1.0625rem;                                   /* 17px           */
+  --text-lg: clamp(1.125rem, 1.05rem + 0.3vw, 1.3125rem); /* 18–21px        */
+  --text-xl: clamp(1.375rem, 1.2rem + 0.7vw, 1.75rem);    /* 22–28px        */
+  --text-2xl: clamp(1.5rem, 1.3rem + 0.9vw, 2rem);        /* 24–32px        */
+  --text-3xl: clamp(1.875rem, 1.5rem + 1.6vw, 2.75rem);   /* 30–44px        */
+  --text-4xl: clamp(2.25rem, 1.7rem + 2.6vw, 3.75rem);    /* 36–60px        */
+  --text-5xl: clamp(2.5rem, 1.8rem + 3.6vw, 4.75rem);     /* 40–76px        */
+
+  --leading-none: 1;
+  --leading-tight: 1.15;
+  --leading-snug: 1.32;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.75;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-label: 0.1em;
+  --tracking-logo: 0.2em;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* --- Space (4px base) -------------------------------------------------- */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 20px;
   --space-6: 24px;
+  --space-7: 28px;
   --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
+  --space-14: 56px;
   --space-16: 64px;
   --space-20: 80px;
   --space-24: 96px;
   --space-32: 128px;
 
-  /* --- Layout --- */
+  /* --- Layout ------------------------------------------------------------ */
+  --gutter: clamp(20px, 4.5vw, 64px);
+  --max-width-text: 62ch;
   --max-width-narrow: 720px;
-  --max-width-normal: 1080px;
+  --max-width: 1280px;
   --max-width-wide: 1440px;
-  --max-width-full: 100%;
-  --gutter: clamp(24px, 5vw, 64px);
 
-  /* --- Radii --- */
-  --radius-none: 0;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 24px;
-  --radius-3xl: 32px;
-  --radius-full: 9999px;
+  --section-y: clamp(56px, 7vw, 104px);
+  --header-h: 68px;
 
-  /* --- Shadows & Glows --- */
-  --shadow-xs: 0 1px 2px rgba(10, 10, 11, 0.04);
-  --shadow-sm: 0 2px 8px rgba(10, 10, 11, 0.06);
-  --shadow-md: 0 8px 24px rgba(10, 10, 11, 0.08);
-  --shadow-lg: 0 16px 48px rgba(10, 10, 11, 0.1);
-  --shadow-xl: 0 24px 64px rgba(10, 10, 11, 0.12);
-  --shadow-2xl: 0 32px 96px rgba(10, 10, 11, 0.15);
+  /* --- Radius ------------------------------------------------------------ */
+  --radius: 0px;
+  --radius-round: 50%;
 
-  --glow-sm: 0 0 12px var(--color-gold-glow);
-  --glow-md: 0 0 24px var(--color-gold-glow);
-  --glow-lg: 0 0 48px var(--color-gold-glow-strong);
-  --glow-coral: 0 0 24px var(--color-coral-glow);
-  --glow-emerald: 0 0 24px var(--color-emerald-glow);
-  --glow-violet: 0 0 24px var(--color-violet-glow);
-  --glow-cyan: 0 0 24px var(--color-cyan-glow);
+  /* --- Elevation --------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(42, 37, 34, 0.06);
+  --shadow-overlay: 0 24px 64px rgba(42, 37, 34, 0.18);
+  --overlay: rgba(42, 37, 34, 0.42);
 
-  /* --- Transitions: Springy, expressive --- */
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --ease-sharp: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  /* --- Motion ------------------------------------------------------------ */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 380ms;
 
-  --duration-instant: 80ms;
-  --duration-fast: 150ms;
-  --duration-normal: 250ms;
-  --duration-slow: 400ms;
-  --duration-slower: 600ms;
-  --duration-slowest: 1000ms;
-  --duration-entrance: 1200ms;
-
-  /* --- Z-Indices --- */
-  --z-bg: -1;
-  --z-base: 0;
-  --z-dropdown: 100;
-  --z-sticky: 200;
-  --z-modal: 300;
-  --z-popover: 400;
-  --z-toast: 500;
-  --z-tooltip: 600;
-  --z-cursor: 9999;
-
-  /* --- Container --- */
-  --container-padding: var(--gutter);
+  /* --- Layers ------------------------------------------------------------ */
+  --z-header: 100;
+  --z-drawer: 200;
+  --z-backdrop: 190;
+  --z-sticky: 150;
+  --z-toast: 400;
 }
 
-/* Dark mode sections */
-[data-theme="dark"] {
-  --color-bg: var(--color-void);
-  --color-bg-alt: var(--color-void-soft);
-  --color-bg-card: var(--color-charcoal);
-  --color-border: var(--color-charcoal-lifted);
-  --color-text: var(--color-cream);
-  --color-text-soft: var(--color-sand);
-  --color-text-muted: var(--color-charcoal-lifted);
-}
-
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --duration-instant: 0ms;
-    --duration-fast: 0ms;
-    --duration-normal: 0ms;
-    --duration-slow: 0ms;
-    --duration-slower: 0ms;
-    --duration-slowest: 0ms;
-    --duration-entrance: 0ms;
+    --duration-fast: 1ms;
+    --duration-base: 1ms;
+    --duration-slow: 1ms;
   }
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-/* ==========================================================================
-   Semantic tokens (additive). Contrast ratios measured against ivory #FDFBF7.
-   Gold #C5A059 is 2.38:1 on ivory, so it is for fills/borders/large decoration only;
-   use --color-gold-text (6.14:1) when gold-toned TEXT sits on a light surface.
-   Status colours must always be paired with a text label or icon, never colour alone.
-   ========================================================================== */
-:root {
-  --color-gold-text: #7A5A1C;
-  --color-success: #1E6B45;   /* 6.26:1 */
-  --color-warning: #7A4A00;   /* 7.24:1 */
-  --color-error: #A32027;     /* 7.27:1 */
-  --color-info: #1D4E7D;      /* 8.33:1 */
-  --color-success-bg: color-mix(in srgb, var(--color-success) 10%, #FDFBF7);
-  --color-warning-bg: color-mix(in srgb, var(--color-warning) 10%, #FDFBF7);
-  --color-error-bg: color-mix(in srgb, var(--color-error) 10%, #FDFBF7);
-  --color-info-bg: color-mix(in srgb, var(--color-info) 10%, #FDFBF7);
-  --color-focus: #4A1525;
-  --color-focus-halo: #FDFBF7;
 }

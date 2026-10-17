@@ -12,9 +12,9 @@ export default function About() {
     <section className="section">
       <div className="container about-split">
         <img src={content?.aboutImage || PLACEHOLDER.about} alt="The woman behind the boutique" />
-        <div>
-          <h1 style={{ marginBottom: 20 }}>Our Story</h1>
-          <p style={{ maxWidth: 'none' }}>{content?.aboutText || DEFAULT_ABOUT_TEXT}</p>
+        <div className="about-copy">
+          <h1>Our Story</h1>
+          <p>{content?.aboutText || DEFAULT_ABOUT_TEXT}</p>
         </div>
       </div>
     </section>

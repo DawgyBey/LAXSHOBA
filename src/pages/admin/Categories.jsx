@@ -4,6 +4,7 @@ import useDocumentTitle from '../../hooks/useDocumentTitle';
 import Field from '../../components/Field';
 import { createCategory, getAdminCategories, removeCategory } from '../../lib/data';
 import { slugify } from '../../lib/format';
+import { toast } from '../../lib/toast';
 
 export default function Categories() {
   useDocumentTitle('Categories — Admin');
@@ -24,7 +25,7 @@ export default function Categories() {
       categories.reload();
     } catch (err) {
       console.error('Adding category failed:', err);
-      alert('Could not add this category. Please try again.');
+      toast('Could not add this category. Please try again.', { tone: 'error' });
     }
   }
 
@@ -35,7 +36,7 @@ export default function Categories() {
       categories.reload();
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Could not delete this category. Please try again.');
+      toast('Could not delete this category. Please try again.', { tone: 'error' });
     }
   }
 

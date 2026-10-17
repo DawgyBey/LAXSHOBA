@@ -6,9 +6,8 @@ import { useSearchParams } from 'react-router-dom';
 import useAsync from '../hooks/useAsync';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import ProductGrid from '../components/ProductGrid';
-import { COLORS, OCCASIONS, SIZES } from '../lib/constants';
+import { COLORS, DEMO_PRODUCTS, OCCASIONS, SIZES } from '../lib/constants';
 import { getCategories, getProducts } from '../lib/data';
-import { DEMO_PRODUCTS } from '../lib/constants';
 import { discountPercent, effectivePrice } from '../lib/format';
 
 const EMPTY_CATEGORIES = [];
@@ -59,8 +58,11 @@ function applyFilters(products, f) {
   const sorted = [...results];
   if (f.sort === 'price-low') sorted.sort((a, b) => effectivePrice(a) - effectivePrice(b));
   if (f.sort === 'price-high') sorted.sort((a, b) => effectivePrice(b) - effectivePrice(a));
-  if (f.sort === 'newest') sorted.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-  if (f.sort === 'popular') sorted.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+  // createdAt arrives from the API as an ISO string (it used to be a Firestore timestamp).
+  const created = (p) => Date.parse(p.createdAt) || 0;
+  if (f.sort === 'newest') sorted.sort((a, b) => created(b) - created(a));
+  // Products have no view counter, so "popular" means the shop's own hot picks first, newest within each group.
+  if (f.sort === 'popular') sorted.sort((a, b) => Number(Boolean(b.isHotPick)) - Number(Boolean(a.isHotPick)) || created(b) - created(a));
   return sorted;
 }
 
@@ -149,10 +151,17 @@ function ShopContent({ products, categories, loading = false }) {
 
         <div className="shop-layout">
           <button className="filter-toggle" type="button" aria-expanded={mobileFiltersOpen} aria-controls="shop-filters" onClick={() => setMobileFiltersOpen((open) => !open)}>
-            <span>{mobileFiltersOpen ? 'Hide filters' : 'Filters'}</span><span className="filter-toggle-count">{activeFilters.length || '＋'}</span>
+            <span>{mobileFiltersOpen ? 'Hide filters' : 'Filters'}</span>
+            {activeFilters.length > 0 && <span className="filter-toggle-count" aria-hidden="true">{activeFilters.length}</span>}
           </button>
-          <aside id="shop-filters" className={`filter-panel${mobileFiltersOpen ? ' is-open' : ''}`}>
-            <div className="filter-panel-head"><h2>Refine</h2><button type="button" onClick={clearFilters}>Reset all</button></div>
+          <aside id="shop-filters" className={`filter-panel${mobileFiltersOpen ? ' is-open' : ''}`} aria-label="Filters">
+            <div className="filter-panel-head">
+              <h2>Refine</h2>
+              <div className="filter-panel-head-actions">
+                <button type="button" onClick={clearFilters}>Reset all</button>
+                <button type="button" className="filter-panel-close" aria-label="Close filters" onClick={() => setMobileFiltersOpen(false)}>×</button>
+              </div>
+            </div>
             <h4>Search</h4>
             <div className="field">
               <input type="text" placeholder="Search products" value={filters.search} onChange={(e) => set('search', e.target.value)} />
@@ -179,12 +188,12 @@ function ShopContent({ products, categories, loading = false }) {
               <input type="checkbox" checked={filters.saleOnly} onChange={(e) => set('saleOnly', e.target.checked)} /> On sale
             </label>
 
-            <div style={{ marginTop: 24 }}>
+            <div className="filter-panel-actions">
               <button className="btn btn-outline btn-small" onClick={clearFilters}>Clear filters</button>
             </div>
           </aside>
 
-          <div>
+          <div className="shop-results">
             <div className="shop-toolbar">
               <span className="result-count">
                 {visibleResults.length === results.length
@@ -195,7 +204,7 @@ function ShopContent({ products, categories, loading = false }) {
                 <option value="newest">Newest</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
-                <option value="popular">Most Popular</option>
+                <option value="popular">Hot picks first</option>
               </select>
             </div>
             {activeFilters.length > 0 && <div className="active-filters" aria-label="Active filters">
