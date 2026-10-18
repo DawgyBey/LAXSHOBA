@@ -56,3 +56,14 @@ export function safeRedirect(target, fallback = '/') {
   if (!target.startsWith('/') || target.startsWith('//')) return fallback;
   return target;
 }
+
+// Admin = role "admin" in the database AND (when ADMIN_EMAILS is set) an email on that list.
+// The list only ever narrows access; it never grants it. `allowed` is a Set of lowercase emails.
+export function parseEmailList(csv) {
+  return new Set(String(csv || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean));
+}
+export function isAdminAccount(user, allowed) {
+  if (!user || user.role !== 'admin') return false;
+  if (!allowed || allowed.size === 0) return true;
+  return allowed.has(String(user.email || '').trim().toLowerCase());
+}

@@ -10,11 +10,12 @@ import cors from 'cors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_ABOUT_TEXT, DEFAULT_CATEGORIES, DEFAULT_HERO, DEFAULT_HERO_IMAGE, DEMO_PRODUCTS } from '../src/lib/constants.js';
-import { ORDER_STATUSES, PAYMENT_METHODS, canTransition, isObjectId, normalizeEmail, parsePagination, validatePassword, cleanText } from './lib/validate.js';
+import { ORDER_STATUSES, PAYMENT_METHODS, canTransition, isAdminAccount, isObjectId, parseEmailList, normalizeEmail, parsePagination, validatePassword, cleanText } from './lib/validate.js';
 import { OrderError, priceOrder } from './lib/pricing.js';
 import { csrfProtection, newCsrfToken, parseOrigins, rateLimiter, securityHeaders } from './lib/security.js';
 import { addressSpec, categorySpec, checkoutSpec, homepageSpec, pageSpec, productSpec, profileSpec, sanitize, sanitizeCartLines } from './lib/schemas.js';
 import { sendPasswordReset } from './mailer.js';
+import { isValidPhone } from '../src/lib/validation.js';
 
 const app = express();
 const port = Number(process.env.PORT || 10000);
@@ -26,6 +27,9 @@ const trustedOrigins = parseOrigins(process.env.CLIENT_ORIGIN || (isProduction ?
 if (!process.env.MONGODB_URI || !jwtSecret) throw new Error('MONGODB_URI and JWT_SECRET are required');
 if (isProduction && (jwtSecret.length < 32 || trustedOrigins.size === 0)) throw new Error('Production requires JWT_SECRET (>=32 chars) and CLIENT_ORIGIN (exact origin[s], comma separated)');
 
+const adminEmails = parseEmailList(process.env.ADMIN_EMAILS); // narrows admin access to these emails (role in the DB is still required)
+const isAdminUser = (user) => isAdminAccount(user, adminEmails);
+if (isProduction && adminEmails.size === 0) console.warn('ADMIN_EMAILS is not set: any account with role "admin" in the database can use the admin API. Set it to the owner email(s).');
 const JWT_OPTS = { issuer: 'laxshobha', audience: 'laxshobha-web' };
 const SESSION_TTL = { customer: 7 * 24 * 3600, admin: 8 * 3600 }; // seconds; admin sessions are deliberately short
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 12); // equalises timing for unknown accounts
@@ -68,7 +72,7 @@ async function seedContent() {
 // Role is NEVER derived from usernames/emails at runtime. It lives only in the database and is changed by
 // server/scripts/provision-admin.js (operator action). The token carries no role; it is read from the DB per request.
 const cookieBase = { secure: isProduction, sameSite: 'lax', path: '/' };
-const ttlFor = (user) => SESSION_TTL[user.role === 'admin' ? 'admin' : 'customer'];
+const ttlFor = (user) => SESSION_TTL[isAdminUser(user) ? 'admin' : 'customer'];
 function startSession(res, user) {
   const ttl = ttlFor(user);
   const token = jwt.sign({ sub: user.id, ver: user.tokenVersion || 0 }, jwtSecret, { algorithm: 'HS256', expiresIn: ttl, ...JWT_OPTS });
@@ -85,12 +89,14 @@ async function userFromRequest(req) {
     return user && (user.tokenVersion || 0) === (payload.ver || 0) ? user : null;
   } catch { return null; }
 }
-const publicUser = (user) => user.toJSON();
+// The role sent to the browser is the effective one (an admin whose email is not on ADMIN_EMAILS is a customer).
+const publicUser = (user) => ({ ...user.toJSON(), role: isAdminUser(user) ? 'admin' : 'customer' });
 const asyncRoute = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 const body = (req) => (req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {});
 const bad = (res, error) => res.status(400).json({ error });
 async function auth(req, res, next) { const user = await userFromRequest(req); if (!user) return res.status(401).json({ error: 'Authentication required' }); req.user = user; next(); }
-const admin = (req, res, next) => (req.user.role === 'admin' ? next() : res.status(403).json({ error: 'Admin access required' }));
+// Signed-in non-admins get the same 404 as an unknown route, so the admin API does not advertise itself.
+const admin = (req, res, next) => (isAdminUser(req.user) ? next() : res.status(404).json({ error: 'Not found' }));
 
 // ---- middleware: CSRF + rate limits ----------------------------------------------------------
 app.use('/api', (req, res, next) => { if (!req.cookies?.csrf) res.cookie('csrf', newCsrfToken(), { ...cookieBase, httpOnly: false }); next(); });
@@ -112,7 +118,7 @@ app.post('/api/auth/register', limitRegister, asyncRoute(async (req, res) => {
   const b = body(req); const email = normalizeEmail(b.email);
   const name = cleanText(b.name, 100), phone = cleanText(b.phone, 30), street = cleanText(b.street, 200), city = cleanText(b.city, 100);
   const pwErr = validatePassword(b.password);
-  if (!name || !email || pwErr || phone.length < 5 || !street || !city) return bad(res, pwErr || 'Name, a valid email, password, phone, street, and city are required');
+  if (!name || !email || pwErr || !isValidPhone(phone) || !street || !city) return bad(res, pwErr || 'Name, a valid email, password, phone, street, and city are required');
   if (await User.exists({ $or: [{ email }, { username: email }] })) return res.status(409).json({ error: 'We could not create an account with those details' });
   let user;
   try { user = await User.create({ name, username: email, email, phone, passwordHash: await bcrypt.hash(b.password, 12), role: 'customer', emailVerified: false }); }
@@ -187,7 +193,7 @@ app.get('/api/products', asyncRoute(async (req, res) => { const { limit, skip } 
 app.get('/api/products/:id', asyncRoute(async (req, res) => { const product = isObjectId(req.params.id) ? await Product.findOne({ _id: req.params.id, published: true }) : null; if (!product) return res.status(404).json({ error: 'Product not found' }); res.json(product); }));
 app.get('/api/categories', asyncRoute(async (_, res) => res.json(await Category.find().sort({ name: 1 }).limit(500))));
 app.get('/api/homepage', asyncRoute(async (_, res) => res.json((await Homepage.findOne({ key: 'main' })) || {})));
-app.get('/api/pages/:slug', asyncRoute(async (req, res) => { const page = await Page.findOne({ slug: String(req.params.slug).toLowerCase().slice(0, 80), published: true }); if (!page) return res.status(404).json({ error: 'Page not found' }); res.json(page); }));
+app.get('/api/pages/:slug', asyncRoute(async (req, res) => { const page = await Page.findOne({ slug: String(req.params.slug).toLowerCase().slice(0, 80), published: true }); if (!page) return res.status(204).end(); res.json(page); }));
 app.post('/api/newsletter', limitNewsletter, asyncRoute(async (req, res) => {
   const email = normalizeEmail(body(req).email); if (!email) return bad(res, 'Enter a valid email address');
   await NewsletterSubscriber.updateOne({ email }, { $setOnInsert: { email } }, { upsert: true });
@@ -198,9 +204,12 @@ app.post('/api/newsletter', limitNewsletter, asyncRoute(async (req, res) => {
 app.use('/api/me', auth);
 app.get('/api/me', (req, res) => res.json({ user: publicUser(req.user) }));
 app.patch('/api/me', asyncRoute(async (req, res) => {
-  const { value, error } = sanitize(body(req), profileSpec); if (error) return bad(res, 'Name and phone are required');
-  const update = { name: value.name, phone: value.phone }; if (typeof value.photoURL === 'string') update.photoURL = value.photoURL;
-  res.json({ user: publicUser(await User.findByIdAndUpdate(req.user.id, update, { new: true, runValidators: true })) });
+  // Only name, phone and photoURL can ever be written here (explicit allowlist in profileSpec): role, email, id,
+  // wishlist, tokenVersion etc. in the body are ignored. Each field is validated only when it is supplied.
+  const { value, error } = sanitize(body(req), profileSpec, { partial: true });
+  if (error) return bad(res, error.startsWith('phone') ? 'Enter a valid phone number' : error.startsWith('photoURL') ? 'That profile picture is not supported or is too large' : 'Enter your full name (at least 2 characters)');
+  if (!Object.keys(value).length) return bad(res, 'Nothing to update');
+  res.json({ user: publicUser(await User.findByIdAndUpdate(req.user.id, value, { new: true, runValidators: true })) });
 }));
 app.get('/api/me/cart', asyncRoute(async (req, res) => res.json((await Cart.findOne({ userId: req.user.id }))?.items || [])));
 app.put('/api/me/cart', asyncRoute(async (req, res) => { const items = sanitizeCartLines(body(req).items ?? []); if (!items) return bad(res, 'Invalid cart'); res.json((await Cart.findOneAndUpdate({ userId: req.user.id }, { userId: req.user.id, items }, { upsert: true, new: true })).items); }));
@@ -218,7 +227,7 @@ app.put('/api/me/wishlist/:productId', asyncRoute(async (req, res) => {
 }));
 app.get('/api/me/addresses', asyncRoute(async (req, res) => res.json(await Address.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(50))));
 app.post('/api/me/addresses', asyncRoute(async (req, res) => {
-  const { value, error } = sanitize(body(req), addressSpec); if (error) return bad(res, 'Street, city, and phone are required');
+  const { value, error } = sanitize(body(req), addressSpec); if (error) return bad(res, error.startsWith('phone') ? 'Enter a valid phone number' : 'Street, city, and a valid phone number are required');
   if ((await Address.countDocuments({ userId: req.user.id })) >= 20) return bad(res, 'Address limit reached');
   res.status(201).json(await Address.create({ ...value, label: value.label || 'Home', userId: req.user.id }));
 }));

@@ -1,4 +1,5 @@
 // Explicit field allowlists + type/length validation for every write endpoint. Pure; no dependencies.
+import { isValidPhone, MAX_AVATAR_DATA_CHARS } from '../../src/lib/validation.js';
 const INVALID = Symbol('invalid');
 const isStr = (v) => typeof v === 'string';
 // eslint-disable-next-line no-control-regex
@@ -27,6 +28,17 @@ export const imageRef = () => (v) => {
   if (/^\/(?!\/)[^\\\s]*$/.test(s) && s.length <= 2000) return s;
   if (/^https:\/\/[^\s]+$/.test(s) && s.length <= 2000) return s;
   if (/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(s)) return s;
+  return INVALID;
+};
+// Phone number: normalised whitespace, 7-15 digits (same rule as the browser forms).
+export const phone = () => (v) => { if (!isStr(v)) return INVALID; const s = v.replace(/\s+/g, ' ').trim(); return isValidPhone(s) ? s : INVALID; };
+// Profile picture: an https URL (Google) or a small raster data URI. Never SVG, never javascript:, never a path.
+export const avatarRef = () => (v) => {
+  if (!isStr(v)) return INVALID;
+  const s = v.trim();
+  if (s === '') return '';
+  if (/^https:\/\/[^\s]+$/.test(s) && s.length <= 2000) return s;
+  if (s.length <= MAX_AVATAR_DATA_CHARS && /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=]+$/i.test(s)) return s;
   return INVALID;
 };
 export const list = (item, { maxItems = 50 } = {}) => (v) => {
@@ -69,8 +81,8 @@ export const homepageSpec = {
   aboutImage: f(imageRef()), featuredProductIds: f(list(text(40), { maxItems: 50 })), scanTitle: f(text(300)),
   scanDescription: f(text(2000, { multiline: true })), scanProductIds: f(list(text(40), { maxItems: 50 })),
 };
-export const addressSpec = { label: f(text(50)), street: f(text(200, { min: 1 }), true), city: f(text(100, { min: 1 }), true), phone: f(text(30, { min: 5 }), true) };
-export const profileSpec = { name: f(text(100, { min: 1 }), true), phone: f(text(30, { min: 5 }), true), photoURL: f(imageRef()) };
+export const addressSpec = { label: f(text(50)), street: f(text(200, { min: 1 }), true), city: f(text(100, { min: 1 }), true), phone: f(phone(), true) };
+export const profileSpec = { name: f(text(100, { min: 2 }), true), phone: f(phone(), true), photoURL: f(avatarRef()) };
 export const checkoutSpec = { customerName: f(text(100, { min: 1 }), true), paymentMethod: f(text(20, { min: 1 }), true) };
 
 // Cart persistence: display fields only. Prices are re-read from the DB at order time.

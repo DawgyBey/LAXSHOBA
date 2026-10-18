@@ -88,6 +88,7 @@
   /* --- Type ------------------------------------------------------------- */
   /* One family for the whole site. Hierarchy comes from size, weight and
      spacing, not from mixing typefaces. Loaded at 400 / 500 / 600 only. */
+  --font-display: 'Cormorant Garamond', 'Cormorant', Georgia, 'Times New Roman', serif; /* wordmark only */
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
   /* Fluid scale. Ratio tightens as size grows so display type stays compact. */

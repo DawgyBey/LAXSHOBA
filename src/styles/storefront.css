@@ -73,14 +73,36 @@
 .hdr-logo {
   grid-column: 2;
   justify-self: center;
-  font-family: var(--font);
-  font-size: clamp(1.25rem, 2.2vw, 1.5rem);
-  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(10px, 1.4vw, 16px);
   line-height: 1;
-  letter-spacing: var(--tracking-logo);
-  padding-left: var(--tracking-logo);
   color: var(--maroon);
   white-space: nowrap;
+}
+
+.hdr-logo-mark { display: block; width: auto; height: clamp(34px, 3.6vw, 44px); }
+
+.hdr-logo-text { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+
+/* Wordmark: high-contrast serif to match the monogram, widely tracked like a fashion-house label. */
+.hdr-logo-name {
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 2.6vw, 1.9rem);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  margin-right: -0.2em; /* trailing tracking would otherwise push the lockup off-centre */
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hdr-logo-tag {
+  font-family: var(--font);
+  font-size: 0.5625rem;
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
 }
 
 .hdr-search {
@@ -266,9 +288,9 @@
 
 .footer-brand > a {
   display: inline-block;
-  font-family: var(--font);
-  font-size: var(--text-xl);
-  font-weight: var(--weight-medium);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
   letter-spacing: var(--tracking-logo);
   color: var(--ivory);
 }
@@ -1166,7 +1188,6 @@
 
 .product-gallery-main {
   position: relative;
-  aspect-ratio: 3 / 4;
   overflow: hidden;
   margin-bottom: var(--space-3);
   background: var(--maroon-08);
@@ -1174,7 +1195,6 @@
 
 .gallery-image-frame {
   width: 100%;
-  height: 100%;
 }
 
 .gallery-index {
@@ -2157,13 +2177,10 @@
 
   .hdr-menu { display: grid; color: var(--maroon); }
 
-  .hdr-logo {
-    grid-column: 2;
-    justify-self: center;
-    font-size: 1.4rem;
-    letter-spacing: 0.16em;
-    padding-left: 0.16em;
-  }
+  .hdr-logo { gap: 8px; }
+  .hdr-logo-mark { height: 30px; }
+  .hdr-logo-name { font-size: 1.2rem; letter-spacing: 0.14em; margin-right: -0.14em; }
+  .hdr-logo-tag { display: none; }
 
   .hdr-search { display: none; }
 
@@ -2384,4 +2401,83 @@
   .newsletter-band-form .link-arrow { justify-self: start; margin-bottom: var(--space-3); }
 
   .footer-topline { flex-direction: column; align-items: flex-start; }
+}
+
+/* ==========================================================================
+   Account page refinements (avatar fallback, two-column form, order details)
+   ========================================================================== */
+
+/* Initials shown instead of a broken-image icon (see components/Avatar.jsx). */
+.avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: var(--maroon);
+  color: var(--ivory);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  overflow: hidden;
+}
+.profile-avatar.avatar-fallback { font-size: 1.75rem; }
+.profile-heading-avatar.avatar-fallback { font-size: 1.05rem; }
+.hdr-action .header-avatar.avatar-fallback { font-size: 0.6875rem; }
+
+.profile-heading-email {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Use the container width instead of a narrow centred form. */
+.profile-panel { max-width: none; }
+.profile-panel-wide { max-width: none; }
+.profile-info {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: var(--space-10);
+  align-items: start;
+}
+.profile-info .profile-avatar-editor {
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-6) var(--space-4);
+  border: 1px solid var(--color-border);
+  text-align: center;
+}
+.profile-avatar-actions { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; }
+.profile-avatar-actions .btn { width: 100%; justify-content: center; }
+.profile-avatar-editor input[type='file'] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.profile-avatar-editor label:focus-within { outline: 2px solid var(--maroon); outline-offset: 2px; }
+.profile-fields { max-width: 640px; }
+.profile-panel form { max-width: 640px; }
+.field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--space-5); }
+.field-error { margin: 0; font-size: var(--text-xs); color: var(--color-error); }
+.field-hint { margin: 0; font-size: var(--text-xs); color: var(--color-text-muted); }
+.field input[aria-invalid='true'] { border-color: var(--color-error); }
+.field input:disabled { background: var(--maroon-04); color: var(--color-text-muted); cursor: not-allowed; }
+
+.order-items { margin: 0 0 var(--space-2); padding: 0; list-style: none; font-size: var(--text-sm); color: var(--color-text-soft); }
+.order-items li + li { margin-top: var(--space-1); }
+.order-row-new { background: var(--maroon-04); padding-inline: var(--space-4); }
+.profile-notice .btn { margin-top: var(--space-2); }
+
+.profile-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+.profile-tabs button { white-space: nowrap; min-height: 44px; }
+.profile-tabs button:focus-visible { outline: 2px solid var(--maroon); outline-offset: 4px; }
+
+@media (max-width: 860px) {
+  .profile-info { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
+  .profile-info .profile-avatar-editor { flex-direction: row; text-align: left; padding: var(--space-4); }
+  .profile-avatar-actions { flex-direction: row; flex-wrap: wrap; }
+  .profile-avatar-actions .btn { width: auto; }
+}
+@media (max-width: 560px) {
+  .field-row { grid-template-columns: minmax(0, 1fr); }
+  .profile-tabs { gap: var(--space-4); }
+  .address-row { flex-direction: column; }
 }

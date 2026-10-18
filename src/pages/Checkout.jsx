@@ -12,6 +12,7 @@ import Field from '../components/Field';
 import { getAddresses, saveOrder } from '../lib/data';
 import { formatPrice } from '../lib/format';
 import { toast } from '../lib/toast';
+import { validateName, validatePhone, validateRequired } from '../lib/validation';
 
 const PAYMENT_OPTIONS = [
   { value: 'cod', label: 'Cash on Delivery' },
@@ -27,7 +28,7 @@ export default function Checkout() {
   const [form, setForm] = useState({
     name: user.name || '',
     email: user.email || '',
-    phone: '',
+    phone: user.phone || '',
     street: '',
     city: '',
   });
@@ -49,13 +50,13 @@ export default function Checkout() {
 
   async function placeOrder() {
     const name = form.name.trim();
-    const email = form.email.trim();
     const phone = form.phone.trim();
     const street = form.street.trim();
     const city = form.city.trim();
 
-    if (!name || !phone || !street || !city) {
-      toast('Please fill in your contact info and delivery address.', { tone: 'error' });
+    const problem = validateName(name) || validatePhone(phone) || validateRequired(street, 'Street address') || validateRequired(city, 'City', 100);
+    if (problem) {
+      toast(problem, { tone: 'error' });
       return;
     }
 
@@ -63,13 +64,9 @@ export default function Checkout() {
     try {
       const order = await saveOrder({
         customerName: name,
-        customerEmail: email,
-        items,
-        subtotal: total,
-        total,
+        items: items.map(({ productId, quantity, size, color }) => ({ productId, quantity, size, color })),
         address: { street, city, phone },
         paymentMethod: payment,
-        status: 'Pending',
       });
 
       // The order exists now — a failure to empty the cart shouldn't look like a failed order.
@@ -91,7 +88,7 @@ export default function Checkout() {
           <div className="checkout-form">
             <h3>1. Contact Information</h3>
             <Field label="Full Name" type="text" {...bind('name')} />
-            <Field label="Email" type="email" {...bind('email')} />
+            <Field label="Email" type="email" value={form.email} disabled readOnly hint="Order updates go to your account email." />
             <Field label="Phone" type="tel" {...bind('phone')} />
 
             <h3>2. Delivery Address</h3>

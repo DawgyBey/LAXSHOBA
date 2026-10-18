@@ -17,11 +17,17 @@ export function RequireAuth() {
   return <Navigate to={wasSignedIn.current ? '/' : '/login'} replace state={{ from: `${location.pathname}${location.search}` }} />;
 }
 
-// Wrap routes under /admin. Signed-out -> login, signed-in non-admin -> home.
-// The API enforces the same access checks server-side; this keeps the UI out of the way.
+// Wrap routes under /admin. Only an admin account gets in; everyone else (signed out or a customer) is sent to the
+// 404 page so the panel does not advertise itself. The owner signs in at /admin-login (not linked anywhere).
+// The API enforces the same rule server-side; this just keeps the UI, and the admin code bundle, away from visitors.
 export function RequireAdmin() {
   const { user, isAdmin, loading } = useAuth();
+  const wasAdmin = useRef(false);
+  if (user && isAdmin) wasAdmin.current = true;
+
   if (loading) return <Loading />;
-  if (!user) return <Navigate to="/admin-login" replace state={{ from: '/admin' }} />;
-  return isAdmin ? <Outlet /> : <Navigate to="/admin-login" replace state={{ from: '/admin' }} />;
+  if (user && isAdmin) return <Outlet />;
+  // An admin whose session just expired goes back to the admin sign-in instead of seeing a 404.
+  if (!user && wasAdmin.current) return <Navigate to="/admin-login" replace state={{ from: '/admin' }} />;
+  return <Navigate to="/404" replace />;
 }

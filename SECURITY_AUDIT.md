@@ -65,3 +65,25 @@ No secret values appear in this document. Nothing here was deployed or run again
 - [ ] Configure an email provider; add admin MFA / SSO; add uptime monitoring on `/api/health`, log shipping, and error reporting.
 - [ ] Run duplicate-email check (§5.3), then provision admins.
 - [ ] Multi-instance? Replace the in-memory rate limiter with a shared store.
+
+---
+
+## 7. Follow-up pass (account page, validation, console noise)
+
+- **Broken avatars**: `<img>` had no `onError` and sent a Referer to Google's image host. New `src/components/Avatar.jsx` sends `referrerPolicy="no-referrer"` and falls back to initials on any load failure (used in header, account heading and picture editor).
+- **Profile API** (`PATCH /api/me`): now a *partial* allowlist update (`name`, `phone`, `photoURL` only), each validated when present. Picture-only updates no longer fail for Google users who have no phone saved. Pictures must be an https URL or a raster data URI of at most 400,000 characters (SVG, `javascript:` and paths are rejected).
+- **Phone validation** (7–15 digits, `+ - ( )` and spaces allowed) lives in `src/lib/validation.js` and is enforced by the browser forms, registration, profile and addresses on the server.
+- **Checkout** no longer sends totals/status/email (the server ignored them anyway); phone is validated and pre-filled from the account.
+- **`GET /api/pages/:slug`** answers `204` when no CMS page exists for the slug (the home page requests `home` for SEO overrides; no row ⇒ previously a red 404 in the console on every visit). The client falls back to its built-in title/description.
+- Tests: `tests/profile.test.js` (phone rules, profile allowlist, avatar URI rules, address phone).
+
+## 8. Admin lock-down and product zoom
+
+- `/admin/*` (UI): `RequireAdmin` now sends anyone who is not an admin (signed out or customer) to `/404`. The admin code is lazy-loaded behind the guard, so visitors never download it. The owner signs in at `/admin-login` (not linked from the site). An admin whose session expires mid-work is sent back to `/admin-login`.
+- `/api/admin/*`: requires role `admin` **and**, when `ADMIN_EMAILS` is set, an email on that list (`isAdminAccount` in `server/lib/validate.js`). Signed-in non-admins get a plain 404. The role the browser receives is the effective one. If `ADMIN_EMAILS` is empty in production the server logs a warning and falls back to the DB role alone — set it.
+- Product zoom: the gallery frame now takes the photo's own shape (most product photos are landscape 1664×928 but were cropped into a 3:4 box, then zoomed on the crop). Mouse-only zoom with an eased transform; touch devices scroll normally; reduced-motion respected.
+
+## 9. Brand lockup, icons, zoom smoothness
+- New `public/brand/mark.png` (transparent monogram cut from `logo.png`) and a proper icon set (`favicon.ico`, 16/32/48, `apple-touch-icon.png`, 192/512). The old tab icon was the full 1254px, 1.1 MB logo with wide margins, which rendered small and rough; `logo.png` is kept but no longer referenced.
+- Header: monogram + serif wordmark (Cormorant Garamond, set via `--font-display` in `tokens.css`, loaded in `index.html`) + "Traditional Wear" line; the line is hidden on phones. Footer wordmark uses the same serif.
+- Zoom: transform eased over 420 ms and transform-origin over 260 ms so the photo glides with the mouse.

@@ -6,6 +6,8 @@ function usePageSEO(slug, fallbackTitle, fallbackDescription) {
     let active = true;
     getPage(slug).then((page) => {
       if (!active) return;
+      // No CMS page saved for this slug (the API answers 204): keep the built-in title and description.
+      if (!page) { document.title = fallbackTitle; return; }
       document.title = page.metaTitle || fallbackTitle;
       if (page.metaDescription) {
         let description = document.querySelector('meta[name="description"]');

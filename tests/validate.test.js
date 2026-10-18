@@ -40,3 +40,14 @@ test('parsePagination clamps', () => {
   assert.equal(parsePagination({}).skip, 0);
 });
 test('isObjectId', () => { assert.ok(isObjectId('507f1f77bcf86cd799439011')); assert.ok(!isObjectId({ $ne: 1 })); assert.ok(!isObjectId('abc')); });
+
+import { isAdminAccount, parseEmailList } from '../server/lib/validate.js';
+test('isAdminAccount needs the admin role, and the allowlist (when set) can only narrow access', () => {
+  const owner = { role: 'admin', email: 'Owner@Shop.com' };
+  const list = parseEmailList(' owner@shop.com , other@shop.com ');
+  assert.equal(isAdminAccount(owner, list), true);                                   // role + listed (case-insensitive)
+  assert.equal(isAdminAccount(owner, new Set()), true);                              // list unset: role decides
+  assert.equal(isAdminAccount({ role: 'admin', email: 'stranger@x.com' }, list), false); // role but not listed
+  assert.equal(isAdminAccount({ role: 'customer', email: 'owner@shop.com' }, list), false); // listed but no role
+  assert.equal(isAdminAccount(null, list), false);
+});

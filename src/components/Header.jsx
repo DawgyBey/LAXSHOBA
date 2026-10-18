@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { BRAND_NAME, NAV_LINKS, PLACEHOLDER } from '../lib/constants';
+import { BRAND_NAME, NAV_LINKS } from '../lib/constants';
+import Avatar from './Avatar';
 
 const isActive = (link, location) =>
   link.to.includes('?')
@@ -54,7 +55,13 @@ export default function Header() {
           </svg>
         </button>
 
-        <Link to="/" className="hdr-logo">{BRAND_NAME}</Link>
+        <Link to="/" className="hdr-logo" aria-label={`${BRAND_NAME} — home`}>
+          <img className="hdr-logo-mark" src="/brand/mark.png" alt="" width="38" height="33" decoding="async" />
+          <span className="hdr-logo-text">
+            <span className="hdr-logo-name">{BRAND_NAME}</span>
+            <span className="hdr-logo-tag">Traditional Wear</span>
+          </span>
+        </Link>
 
         <form className="hdr-search" role="search" onSubmit={search}>
           <label className="sr-only" htmlFor="site-search">Search products</label>
@@ -75,7 +82,7 @@ export default function Header() {
           </Link>
           <Link className="hdr-action" to={user ? '/profile' : '/login'} aria-label={accountLabel || 'Account'}>
             {user
-              ? <img className="header-avatar" src={user.photoURL || PLACEHOLDER.avatar} alt="" />
+              ? <Avatar className="header-avatar" src={user.photoURL} name={user.name} />
               : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true"><circle cx="12" cy="8" r="3.6" /><path d="M5.2 20c.9-3.4 3.2-5.2 6.8-5.2s5.9 1.8 6.8 5.2" /></svg>}
             <span className="sr-only">{accountLabel || 'Account'}</span>
           </Link>
