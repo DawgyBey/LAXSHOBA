@@ -55,7 +55,7 @@ export default function Home() {
   const catalog = products.loading ? [] : (products.data?.length ? products.data : DEMO_PRODUCTS);
   const saleProducts = catalog.filter((p) => discountPercent(p) > 0);
   const hotProducts = catalog.filter((p) => p.isHotPick).slice(0, 8);
-  const arrivals = catalog.slice(0, 8);
+  const arrivals = catalog.filter((product) => product.isNewArrival).slice(0, 8);
 
   // "Featured For You" is a hand-picked list of product ids stored on the homepage document.
   const featuredIds = content?.featuredProductIds;
@@ -194,9 +194,10 @@ export default function Home() {
 
       <section className="sf-section story-section">
         <div className="container about-split">
-          <div className="story-photo"><img src={content?.aboutImage || '/photos/blush-pink-flatlay.jpg'} alt="The founder of Laxshobha" loading="lazy" decoding="async" /></div>
+          <div className="story-photo"><img src={content?.aboutImage || '/profile.png'} alt="The woman behind LAXSHOBHA" loading="lazy" decoding="async" /></div>
           <div>
             <h2>Our story</h2>
+            <p className="eyebrow-plain">The face behind LAXSHOBHA for more than seven years.</p>
             <p>{content?.aboutText || DEFAULT_ABOUT_TEXT}</p>
             <Link to="/about" className="link-arrow">Read more about us <span aria-hidden="true">→</span></Link>
           </div>

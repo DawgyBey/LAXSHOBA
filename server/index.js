@@ -52,7 +52,7 @@ const User = mongoose.model('User', new mongoose.Schema({
   googleSub: { type: String, unique: true, sparse: true }, emailVerified: { type: Boolean, default: false }, tokenVersion: { type: Number, default: 0 },
   resetTokenHash: { type: String, select: false }, resetExpires: { type: Date, select: false },
 }, baseSchema));
-const Product = mongoose.model('Product', new mongoose.Schema({ name: String, price: Number, salePrice: { type: Number, default: null }, stock: { type: Number, min: 0 }, description: String, review: { type: String, default: '' }, fabric: String, categoryId: String, categorySlug: String, sizes: [String], colors: [String], occasion: [String], isHotPick: Boolean, isFeatured: Boolean, published: { type: Boolean, index: true }, images: [String] }, baseSchema));
+const Product = mongoose.model('Product', new mongoose.Schema({ seedId: { type: String, unique: true, sparse: true }, name: String, price: Number, salePrice: { type: Number, default: null }, stock: { type: Number, min: 0 }, description: String, review: { type: String, default: '' }, fabric: String, categoryId: String, categorySlug: String, sizes: [String], colors: [String], occasion: [String], isNewArrival: Boolean, isHotPick: Boolean, isFeatured: Boolean, published: { type: Boolean, index: true }, images: [String] }, baseSchema));
 const Category = mongoose.model('Category', new mongoose.Schema({ name: String, slug: { type: String, index: true }, parentId: { type: String, default: null }, image: String }, baseSchema));
 const Homepage = mongoose.model('Homepage', new mongoose.Schema({ key: { type: String, unique: true }, heroTitle: String, heroDescription: String, heroImage: String, aboutText: String, aboutImage: String, featuredProductIds: [String], scanTitle: String, scanDescription: String, scanProductIds: [String] }, baseSchema));
 const Page = mongoose.model('Page', new mongoose.Schema({ slug: { type: String, unique: true, trim: true, lowercase: true }, name: String, title: String, metaTitle: String, metaDescription: String, content: String, published: { type: Boolean, default: true } }, baseSchema));
@@ -65,6 +65,13 @@ const NewsletterSubscriber = mongoose.model('NewsletterSubscriber', new mongoose
 
 async function seedContent() {
   if (!(await Product.exists())) await Product.insertMany(DEMO_PRODUCTS.map(({ id, ...product }) => ({ ...product, seedId: id })));
+  for (const { id, ...product } of DEMO_PRODUCTS.filter((item) => item.isNewArrival)) {
+    await Product.updateOne(
+      { seedId: id },
+      { $setOnInsert: { ...product, seedId: id } },
+      { upsert: true },
+    );
+  }
   const categoriesBySlug = new Map();
   for (const { name, slug, parentSlug } of DEFAULT_CATEGORIES) {
     const parent = parentSlug ? categoriesBySlug.get(parentSlug) : null;

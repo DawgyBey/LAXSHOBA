@@ -12,6 +12,14 @@ test('product PATCH (partial) does not require fields and cannot republish silen
   assert.deepEqual(sanitize({ stock: 4 }, productSpec, { partial: true }).value, { stock: 4 });
   assert.ok(!('published' in sanitize({ stock: 4 }, productSpec, { partial: true }).value));
 });
+test('product new-arrival flag is accepted only as a boolean', () => {
+  assert.deepEqual(sanitize({ name: 'Kurta', price: 2500, isNewArrival: true }, productSpec).value, {
+    name: 'Kurta',
+    price: 2500,
+    isNewArrival: true,
+  });
+  assert.ok(sanitize({ name: 'Kurta', price: 2500, isNewArrival: 'yes' }, productSpec).error);
+});
 test('imageRef allows safe refs only', () => {
   for (const ok of ['', '/photos/a.jpg', 'https://cdn.example.com/a.jpg', 'data:image/png;base64,AAAA']) assert.notEqual(imageRef()(ok).toString(), 'Symbol(invalid)', ok);
   for (const bad of ['//evil.com/x.png', 'http://x/a.png', 'javascript:alert(1)', 'data:image/svg+xml;base64,AAAA', 'data:text/html;base64,AAAA']) assert.equal(typeof imageRef()(bad), 'symbol', bad);

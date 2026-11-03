@@ -14,7 +14,7 @@ const EMPTY_CATEGORIES = [];
 const NO_FILTERS = {
   search: '', priceMin: '', priceMax: '',
   categories: [], sizes: [], colors: [], occasions: [],
-  hotOnly: false, saleOnly: false, sort: 'newest',
+  newOnly: false, hotOnly: false, saleOnly: false, sort: 'newest',
 };
 
 // The catalog is fetched in one read (it's just text + URLs, cheap), but rendering
@@ -28,6 +28,7 @@ function filtersFromParams(params, categories) {
   const filters = { ...NO_FILTERS };
   const category = params.get('category');
   if (category && categories.some((c) => c.slug === category)) filters.categories = [category];
+  if (params.get('filter') === 'new') filters.newOnly = true;
   if (params.get('filter') === 'hot') filters.hotOnly = true;
   if (params.get('filter') === 'sale') filters.saleOnly = true;
   const occasion = params.get('occasion');
@@ -61,6 +62,7 @@ function applyFilters(products, f, categories) {
     const price = effectivePrice(p);
     if (search && !p.name.toLowerCase().includes(search)) return false;
     if (price < min || price > max) return false;
+    if (f.newOnly && !p.isNewArrival) return false;
     if (f.hotOnly && !p.isHotPick) return false;
     if (f.saleOnly && discountPercent(p) === 0) return false;
     if (f.categories.length && !categorySlugs.has(p.categorySlug)) return false;
@@ -137,6 +139,7 @@ function ShopContent({ products, categories, loading = false }) {
     ...filters.occasions.map((value) => ({ key: 'occasions', value, label: value })),
     ...(filters.priceMin ? [{ key: 'priceMin', value: filters.priceMin, label: `From ${filters.priceMin}` }] : []),
     ...(filters.priceMax ? [{ key: 'priceMax', value: filters.priceMax, label: `Up to ${filters.priceMax}` }] : []),
+    ...(filters.newOnly ? [{ key: 'newOnly', value: true, label: 'New arrivals' }] : []),
     ...(filters.hotOnly ? [{ key: 'hotOnly', value: true, label: 'Hot picks' }] : []),
     ...(filters.saleOnly ? [{ key: 'saleOnly', value: true, label: 'On sale' }] : []),
   ];
@@ -146,7 +149,7 @@ function ShopContent({ products, categories, loading = false }) {
       set(key, filters[key].filter((selected) => selected !== value));
       return;
     }
-    set(key, key === 'hotOnly' || key === 'saleOnly' ? false : '');
+    set(key, key === 'newOnly' || key === 'hotOnly' || key === 'saleOnly' ? false : '');
   }
 
   return (
@@ -154,7 +157,7 @@ function ShopContent({ products, categories, loading = false }) {
       <div className="container">
         <div className="shop-heading">
           <div>
-            <h1>{filters.saleOnly ? 'The sale' : filters.search ? `Results for “${filters.search}”` : 'Shop all pieces'}</h1>
+            <h1>{filters.saleOnly ? 'The sale' : filters.newOnly ? 'New arrivals' : filters.search ? `Results for “${filters.search}”` : 'Shop all pieces'}</h1>
             <p>{filters.saleOnly ? 'Selected pieces at lower prices.' : 'Traditional and western wear, chosen with care.'}</p>
           </div>
         </div>

@@ -69,7 +69,7 @@ export const productSpec = {
   stock: f(int({ max: 1e6 })), description: f(text(5000, { multiline: true })), review: f(text(2000, { multiline: true })),
   fabric: f(text(200)), categoryId: f(text(100)), categorySlug: f(text(100)),
   sizes: f(list(text(30))), colors: f(list(text(50))), occasion: f(list(text(50))),
-  isHotPick: f(bool()), isFeatured: f(bool()), published: f(bool()), images: f(list(imageRef(), { maxItems: 20 })),
+  isNewArrival: f(bool()), isHotPick: f(bool()), isFeatured: f(bool()), published: f(bool()), images: f(list(imageRef(), { maxItems: 20 })),
 };
 export const categorySpec = { name: f(text(100, { min: 1 }), true), slug: f(slug(), true), parentId: f(objectIdOrNull()), image: f(imageRef()) };
 export const pageSpec = {
