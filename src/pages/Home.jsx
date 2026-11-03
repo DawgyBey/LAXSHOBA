@@ -43,7 +43,7 @@ export default function Home() {
   const [newsletterStatus, setNewsletterStatus] = useState('');
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
   useDocumentTitle('LAXSHOBHA — Draped in Beauty');
-  usePageSEO('home', 'LAXSHOBHA — Draped in Beauty', 'Traditional sarees, kurtas, and festive wear chosen with care.');
+  usePageSEO('home', 'LAXSHOBHA — Draped in Beauty', 'Traditional and western wear chosen with care.');
   const content = useHomepageContent();
   const homepageReady = content !== null;
 

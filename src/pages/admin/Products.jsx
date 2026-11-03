@@ -4,7 +4,7 @@ import useDocumentTitle from '../../hooks/useDocumentTitle';
 import Field from '../../components/Field';
 import { COLORS, DEFAULT_CATEGORIES, FABRICS, OCCASIONS, PLACEHOLDER, SIZES } from '../../lib/constants';
 import { createProduct, getAdminCategories, getAdminProducts, removeProduct, updateProduct } from '../../lib/data';
-import { firstImage, formatPrice, splitList } from '../../lib/format';
+import { firstImage, formatPrice, splitList, formatProductName } from '../../lib/format';
 import { toast } from '../../lib/toast';
 
 const EMPTY_FORM = {
@@ -141,7 +141,11 @@ export default function Products() {
     ...databaseCategories,
     ...DEFAULT_CATEGORIES
       .filter((category) => !databaseSlugs.has(category.slug))
-      .map((category) => ({ ...category, id: `slug:${category.slug}`, parentId: null })),
+      .map(({ parentSlug, ...category }) => ({
+        ...category,
+        id: `slug:${category.slug}`,
+        parentId: parentSlug ? `slug:${parentSlug}` : null,
+      })),
   ];
 
   return (
@@ -223,7 +227,7 @@ export default function Products() {
             {list.map((p) => (
               <tr key={p.id}>
                 <td><img src={firstImage(p, PLACEHOLDER.product)} alt="" /></td>
-                <td>{p.name}</td>
+                <td>{formatProductName(p.name)}</td>
                 <td>{formatPrice(p.salePrice || p.price)}</td>
                 <td>{p.stock}</td>
                 <td>{p.published ? 'Published' : 'Draft'}</td>

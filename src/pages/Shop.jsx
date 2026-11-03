@@ -37,10 +37,25 @@ function filtersFromParams(params, categories) {
   return filters;
 }
 
-function applyFilters(products, f) {
+function applyFilters(products, f, categories) {
   const search = f.search.trim().toLowerCase();
   const min = parseFloat(f.priceMin) || 0;
   const max = parseFloat(f.priceMax) || Infinity;
+  const categorySlugs = new Set(f.categories);
+  const categoryIds = new Set(
+    categories.filter((category) => categorySlugs.has(category.slug)).map((category) => String(category.id)),
+  );
+  const pendingCategoryIds = [...categoryIds];
+  while (pendingCategoryIds.length) {
+    const parentId = pendingCategoryIds.pop();
+    for (const category of categories) {
+      if (category.parentId === parentId && !categoryIds.has(String(category.id))) {
+        categoryIds.add(String(category.id));
+        categorySlugs.add(category.slug);
+        pendingCategoryIds.push(String(category.id));
+      }
+    }
+  }
 
   const results = products.filter((p) => {
     const price = effectivePrice(p);
@@ -48,7 +63,7 @@ function applyFilters(products, f) {
     if (price < min || price > max) return false;
     if (f.hotOnly && !p.isHotPick) return false;
     if (f.saleOnly && discountPercent(p) === 0) return false;
-    if (f.categories.length && !f.categories.includes(p.categorySlug)) return false;
+    if (f.categories.length && !categorySlugs.has(p.categorySlug)) return false;
     if (f.sizes.length && !(p.sizes || []).some((s) => f.sizes.includes(s))) return false;
     if (f.colors.length && !(p.colors || []).some((c) => f.colors.includes(c))) return false;
     if (f.occasions.length && !(p.occasion || []).some((o) => f.occasions.includes(o))) return false;
@@ -105,14 +120,18 @@ function ShopContent({ products, categories, loading = false }) {
     if (params.toString()) setParams({}, { replace: true });
   }
 
-  const results = useMemo(() => applyFilters(products, filters), [products, filters]);
+  const results = useMemo(() => applyFilters(products, filters, categories), [products, filters, categories]);
   // Any change to the filters starts back at one page's worth of images.
   useEffect(() => setVisibleCount(PAGE_SIZE), [filters]);
   const visibleResults = useMemo(() => results.slice(0, visibleCount), [results, visibleCount]);
   const mainCategories = categories.filter((c) => !c.parentId).map((c) => ({ value: c.slug, label: c.name }));
+  const categoryOptions = categories.map((c) => ({
+    value: c.slug,
+    label: `${c.parentId ? '— ' : ''}${c.name}`,
+  }));
   const activeFilters = [
     ...(filters.search ? [{ key: 'search', value: filters.search, label: `Search: ${filters.search}` }] : []),
-    ...filters.categories.map((value) => ({ key: 'categories', value, label: mainCategories.find((category) => category.value === value)?.label || value })),
+    ...filters.categories.map((value) => ({ key: 'categories', value, label: categoryOptions.find((category) => category.value === value)?.label || value })),
     ...filters.sizes.map((value) => ({ key: 'sizes', value, label: `Size: ${value}` })),
     ...filters.colors.map((value) => ({ key: 'colors', value, label: `Color: ${value}` })),
     ...filters.occasions.map((value) => ({ key: 'occasions', value, label: value })),
@@ -136,7 +155,7 @@ function ShopContent({ products, categories, loading = false }) {
         <div className="shop-heading">
           <div>
             <h1>{filters.saleOnly ? 'The sale' : filters.search ? `Results for “${filters.search}”` : 'Shop all pieces'}</h1>
-            <p>{filters.saleOnly ? 'Selected pieces at lower prices.' : 'Sarees, kurtas and festive wear, chosen with care.'}</p>
+            <p>{filters.saleOnly ? 'Selected pieces at lower prices.' : 'Traditional and western wear, chosen with care.'}</p>
           </div>
         </div>
 
@@ -167,7 +186,7 @@ function ShopContent({ products, categories, loading = false }) {
               <input type="text" placeholder="Search products" value={filters.search} onChange={(e) => set('search', e.target.value)} />
             </div>
 
-            <CheckboxGroup title="Category" options={mainCategories} selected={filters.categories} onToggle={(v) => toggle('categories', v)} />
+            <CheckboxGroup title="Category" options={categoryOptions} selected={filters.categories} onToggle={(v) => toggle('categories', v)} />
 
             <h4>Price</h4>
             <div className="price-range">

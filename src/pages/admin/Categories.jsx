@@ -57,7 +57,7 @@ export default function Categories() {
           <button type="submit" className="btn btn-primary">Add Category</button>
         </form>
         <p className="eyebrow-plain" style={{ marginTop: 10 }}>
-          Leave "Parent Category" as None to create a main category (e.g. Sarees); choose a parent to create a subcategory (e.g. Silk Sarees under Sarees).
+          Leave "Parent Category" as None to create a main section (e.g. Traditional Wear); choose a parent to add a subcategory (e.g. Sarees under Traditional Wear).
         </p>
       </div>
 

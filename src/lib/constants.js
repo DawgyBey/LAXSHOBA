@@ -63,7 +63,7 @@ export const DEMO_PRODUCTS = [
     description: 'A vivid crimson ensemble with ornate gold floral embroidery, made for celebrations that call for a little drama.',
     sizes: ['M', 'L', 'XL'],
     colors: ['Red'],
-    categorySlug: 'traditional-wear',
+    categorySlug: 'kurtas',
     occasion: ['Wedding', 'Festive', 'Party'],
     fabric: 'Silk blend',
     care: 'Dry clean recommended.',
@@ -80,7 +80,7 @@ export const DEMO_PRODUCTS = [
     description: 'A sleek black kurta with a modern asymmetrical hem, pearl accents, and patterned palazzo trousers.',
     sizes: ['S', 'M', 'L', 'XL'],
     colors: ['Black'],
-    categorySlug: 'traditional-wear',
+    categorySlug: 'kurtas',
     occasion: ['Party', 'Office', 'Festive'],
     fabric: 'Rayon blend',
     care: 'Gentle machine wash. Do not bleach.',
@@ -97,7 +97,7 @@ export const DEMO_PRODUCTS = [
     description: 'A deep wine kurta set with diamond-patterned trousers, embroidered cuffs, and delicate pearl finishing.',
     sizes: ['S', 'M', 'L', 'XL'],
     colors: ['Maroon'],
-    categorySlug: 'traditional-wear',
+    categorySlug: 'kurtas',
     occasion: ['Festive', 'Party'],
     fabric: 'Rayon blend',
     care: 'Gentle machine wash. Dry flat.',
@@ -165,7 +165,7 @@ export const DEMO_PRODUCTS = [
     description: 'A romantic rosewater-pink longline kurta with vine embroidery, matching trousers, and a generous flowing dupatta.',
     sizes: ['S', 'M', 'L', 'XL'],
     colors: ['Pink'],
-    categorySlug: 'traditional-wear',
+    categorySlug: 'kurtas',
     occasion: ['Party', 'Festive', 'Wedding'],
     fabric: 'Lawn cotton',
     care: 'Gentle hand wash. Dry in shade.',
@@ -181,18 +181,23 @@ export const COLORS = ['Red', 'Maroon', 'Pink', 'Orange', 'Gold', 'Green', 'Blue
 export const OCCASIONS = ['Everyday', 'Office', 'Festive', 'Wedding', 'Party'];
 export const FABRICS = ['Cotton', 'Cotton blend', 'Cotton silk blend', 'Lawn cotton', 'Rayon blend', 'Silk blend', 'Textured cotton blend', 'Viscose'];
 export const DEFAULT_CATEGORIES = [
-  { name: 'Sarees', slug: 'sarees' },
-  { name: 'Kurtas', slug: 'kurtas' },
   { name: 'Traditional Wear', slug: 'traditional-wear' },
+  { name: 'Sarees', slug: 'sarees', parentSlug: 'traditional-wear' },
+  { name: 'Kurtas', slug: 'kurtas', parentSlug: 'traditional-wear' },
+  { name: 'Western Wear', slug: 'western-wear' },
+  { name: 'Leggings', slug: 'leggings', parentSlug: 'western-wear' },
+  { name: 'Pants', slug: 'pants', parentSlug: 'western-wear' },
+  { name: 'T-shirts', slug: 't-shirts', parentSlug: 'western-wear' },
+  { name: 'Sweaters', slug: 'sweaters', parentSlug: 'western-wear' },
+  { name: 'One-pieces', slug: 'one-pieces', parentSlug: 'western-wear' },
 ];
 export const ORDER_STATUSES = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
 
 export const NAV_LINKS = [
   { label: 'Home', to: '/' },
   { label: 'Shop', to: '/shop' },
-  { label: 'Sarees', to: '/shop?category=sarees', optional: true },
-  { label: 'Kurtas', to: '/shop?category=kurtas', optional: true },
   { label: 'Traditional Wear', to: '/shop?category=traditional-wear', optional: true },
+  { label: 'Western Wear', to: '/shop?category=western-wear', optional: true },
   { label: 'New Arrivals', to: '/shop?filter=new', optional: true },
   { label: 'Hot Picks', to: '/shop?filter=hot', optional: true },
   { label: 'About', to: '/about' },

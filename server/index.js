@@ -14,7 +14,8 @@ import { ORDER_STATUSES, PAYMENT_METHODS, canTransition, isAdminAccount, isObjec
 import { OrderError, priceOrder } from './lib/pricing.js';
 import { csrfProtection, newCsrfToken, parseOrigins, rateLimiter, securityHeaders } from './lib/security.js';
 import { addressSpec, categorySpec, checkoutSpec, homepageSpec, pageSpec, productSpec, profileSpec, sanitize, sanitizeCartLines } from './lib/schemas.js';
-import { sendPasswordReset } from './mailer.js';
+import { sendPasswordReset, sendAdminOrderAlert } from './mailer.js';
+import { sendWhatsAppAlert } from './lib/twilio.js';
 import { isValidPhone } from '../src/lib/validation.js';
 
 const app = express();
@@ -64,7 +65,16 @@ const NewsletterSubscriber = mongoose.model('NewsletterSubscriber', new mongoose
 
 async function seedContent() {
   if (!(await Product.exists())) await Product.insertMany(DEMO_PRODUCTS.map(({ id, ...product }) => ({ ...product, seedId: id })));
-  if (!(await Category.exists())) await Category.insertMany(DEFAULT_CATEGORIES);
+  const categoriesBySlug = new Map();
+  for (const { name, slug, parentSlug } of DEFAULT_CATEGORIES) {
+    const parent = parentSlug ? categoriesBySlug.get(parentSlug) : null;
+    const category = await Category.findOneAndUpdate(
+      { slug },
+      { $setOnInsert: { name, slug }, $set: { parentId: parent ? String(parent._id) : null } },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+    categoriesBySlug.set(slug, category);
+  }
   if (!(await Homepage.exists({ key: 'main' }))) await Homepage.create({ key: 'main', heroTitle: DEFAULT_HERO.title, heroDescription: DEFAULT_HERO.text, heroImage: DEFAULT_HERO_IMAGE, aboutText: DEFAULT_ABOUT_TEXT, aboutImage: '', featuredProductIds: [] });
 }
 
@@ -254,6 +264,9 @@ app.post('/api/me/orders', limitOrders, asyncRoute(async (req, res) => {
       reserved.push([productId, qty]);
     }
     const order = await Order.create({ userId: req.user.id, customerName: value.customerName, customerEmail: req.user.email || '', items: priced.items, subtotal: priced.subtotal, total: priced.total, address: { street: addr.value.street, city: addr.value.city, phone: addr.value.phone }, paymentMethod: value.paymentMethod, paymentStatus: 'unpaid', status: 'Pending', statusHistory: [{ status: 'Pending', at: new Date() }] });
+    // Send admin alerts (email + WhatsApp) — best-effort, never block the order response
+    await sendAdminOrderAlert(order);
+    await sendWhatsAppAlert(`New order received! Total: Rs. ${order.total}. Customer: ${order.customerName} (${order.customerEmail}). Items: ${order.items.length}.`);
     res.status(201).json(order);
   } catch (err) {
     await Promise.allSettled(reserved.map(([id, qty]) => Product.updateOne({ _id: id }, { $inc: { stock: qty } })));
