@@ -19,5 +19,10 @@ export const firstImage = (p, fallback) => (p.images && p.images[0]) || fallback
 // "S, M , L" -> ['S', 'M', 'L']
 export const splitList = (val) => val.split(',').map((s) => s.trim()).filter(Boolean);
 
+// Inserts a space before each uppercase letter that follows a lowercase letter or digit,
+// e.g. "BlushPinkKurtaSet" -> "Blush Pink Kurta Set"
+export const formatProductName = (name) =>
+  name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').trim();
+
 export const slugify = (name) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');

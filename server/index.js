@@ -264,9 +264,15 @@ app.post('/api/me/orders', limitOrders, asyncRoute(async (req, res) => {
       reserved.push([productId, qty]);
     }
     const order = await Order.create({ userId: req.user.id, customerName: value.customerName, customerEmail: req.user.email || '', items: priced.items, subtotal: priced.subtotal, total: priced.total, address: { street: addr.value.street, city: addr.value.city, phone: addr.value.phone }, paymentMethod: value.paymentMethod, paymentStatus: 'unpaid', status: 'Pending', statusHistory: [{ status: 'Pending', at: new Date() }] });
-    // Send admin alerts (email + WhatsApp) — best-effort, never block the order response
-    await sendAdminOrderAlert(order);
-    await sendWhatsAppAlert(`New order received! Total: Rs. ${order.total}. Customer: ${order.customerName} (${order.customerEmail}). Items: ${order.items.length}.`);
+    // Send admin alerts in the background so messaging providers cannot delay checkout.
+    void Promise.allSettled([
+      sendAdminOrderAlert(order),
+      sendWhatsAppAlert(`New order received! Total: Rs. ${order.total}. Customer: ${order.customerName} (${order.customerEmail}). Items: ${order.items.length}.`),
+    ]).then((results) => {
+      results.forEach((result) => {
+        if (result.status === 'rejected') console.error('[orders] Admin alert failed:', result.reason);
+      });
+    });
     res.status(201).json(order);
   } catch (err) {
     await Promise.allSettled(reserved.map(([id, qty]) => Product.updateOne({ _id: id }, { $inc: { stock: qty } })));
