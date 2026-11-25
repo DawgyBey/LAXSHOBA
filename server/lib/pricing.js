@@ -9,6 +9,15 @@ export const effectivePrice = (p) => (p.salePrice != null && p.salePrice > 0 && 
 export const MAX_LINES = 50;
 export const MAX_QTY = 20;
 
+export function getDeliveryFee(subtotal = 0) {
+  const subtotalValue = Number(subtotal) || 0;
+  const threshold = Number(process.env.FREE_DELIVERY_THRESHOLD || 0);
+  if (threshold > 0 && subtotalValue >= threshold) return 0;
+  const fee = Number(process.env.DELIVERY_FEE || process.env.DELIVERY_CHARGE || 0);
+  if (!Number.isFinite(fee) || fee < 0) return 0;
+  return money(fee);
+}
+
 // lines: untrusted [{productId, quantity, size?, color?}]. productsById: Map<string, product> already loaded from the DB.
 export function priceOrder(lines, productsById) {
   if (!Array.isArray(lines) || lines.length === 0) throw new OrderError('Your cart is empty');
@@ -31,5 +40,6 @@ export function priceOrder(lines, productsById) {
     if (!(productsById.get(productId).stock >= qty)) throw new OrderError('Not enough stock for an item in your cart', 409, 'OUT_OF_STOCK');
   }
   const subtotal = money(items.reduce((sum, i) => sum + i.price * i.quantity, 0));
-  return { items, subtotal, total: subtotal, wanted };
+  const deliveryFee = getDeliveryFee(subtotal);
+  return { items, subtotal, deliveryFee, total: money(subtotal + deliveryFee), wanted };
 }

@@ -9,7 +9,7 @@ import usePageSEO from '../hooks/usePageSEO';
 import ProductGrid from '../components/ProductGrid';
 import { api } from '../lib/api';
 import {
-  DEFAULT_ABOUT_TEXT, DEFAULT_HERO, DEFAULT_HERO_IMAGE, DEMO_PRODUCTS,
+  DEFAULT_ABOUT_TEXT, DEFAULT_HERO, DEFAULT_HERO_IMAGE,
   OCCASIONS, OCCASION_STYLES, PLACEHOLDER, TRUST_POINTS,
 } from '../lib/constants';
 import { getCategories, getProduct, getProducts } from '../lib/data';
@@ -52,7 +52,7 @@ export default function Home() {
 
   // One catalog request feeds sale, hot picks and new arrivals.
   const products = useAsync(async () => getProducts(true));
-  const catalog = products.loading ? [] : (products.data?.length ? products.data : DEMO_PRODUCTS);
+  const catalog = products.loading ? [] : (products.data || []);
   const saleProducts = catalog.filter((p) => discountPercent(p) > 0);
   const hotProducts = catalog.filter((p) => p.isHotPick).slice(0, 8);
   const arrivals = catalog.filter((product) => product.isNewArrival).slice(0, 8);
@@ -66,7 +66,7 @@ export default function Home() {
     return picked.filter(Boolean);
   }, [homepageReady, featuredIds]);
   const featuredLoading = !homepageReady || featured.loading;
-  const featuredProducts = featured.data?.length ? featured.data : DEMO_PRODUCTS.slice(0, 4);
+  const featuredProducts = featured.data || [];
 
   async function subscribeToNewsletter(event) {
     event.preventDefault();
@@ -148,7 +148,7 @@ export default function Home() {
       )}
 
       <Section title="Featured for you" viewAllTo="/shop">
-        <ProductGrid products={featuredProducts} emptyMessage={null} loading={featuredLoading} showBadge />
+        <ProductGrid products={featuredProducts} emptyMessage="Featured picks are coming soon." loading={featuredLoading} showBadge />
       </Section>
 
       {(products.loading || hotProducts.length > 0) && (
@@ -172,7 +172,7 @@ export default function Home() {
       </Section>
 
       <Section title="New arrivals" viewAllTo="/shop?filter=new">
-        <ProductGrid products={arrivals} showBadge loading={products.loading} />
+        <ProductGrid products={arrivals} showBadge loading={products.loading} emptyMessage="New arrivals coming soon" />
       </Section>
 
       <section className="newsletter-band">
@@ -194,12 +194,16 @@ export default function Home() {
 
       <section className="sf-section story-section">
         <div className="container about-split">
-          <div className="story-photo"><img src={content?.aboutImage || '/profile.png'} alt="The woman behind LAXSHOBHA" loading="lazy" decoding="async" /></div>
-          <div>
-            <h2>Our story</h2>
-            <p className="eyebrow-plain">The face behind LAXSHOBHA for more than seven years.</p>
+          <div className="story-photo">
+            <span className="story-photo-frame" aria-hidden="true" />
+            <img src={content?.aboutImage || '/profile.png'} alt="The woman behind LAXSHOBHA" loading="lazy" decoding="async" />
+          </div>
+          <div className="story-copy">
+            <p className="eyebrow">The face behind the label</p>
+            <h2>Beauty with a personal touch.</h2>
+            <p className="story-quote">“Every piece begins with the way a woman wants to feel.”</p>
             <p>{content?.aboutText || DEFAULT_ABOUT_TEXT}</p>
-            <Link to="/about" className="link-arrow">Read more about us <span aria-hidden="true">→</span></Link>
+            <Link to="/about" className="link-arrow">Discover our story <span aria-hidden="true">→</span></Link>
           </div>
         </div>
       </section>

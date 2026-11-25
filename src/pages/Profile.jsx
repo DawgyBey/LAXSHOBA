@@ -22,6 +22,13 @@ const TABS = [
   { id: 'addresses', label: 'Addresses' },
 ];
 const PAYMENT_LABELS = { cod: 'Cash on Delivery', bank: 'Bank Transfer' };
+const ORDER_TRACKING_STEPS = [
+  { status: 'Pending', label: 'Order received', detail: 'Your order is with us.' },
+  { status: 'Confirmed', label: 'Confirmed', detail: 'Your order is confirmed.' },
+  { status: 'Processing', label: 'Preparing', detail: 'We are preparing your pieces.' },
+  { status: 'Shipped', label: 'On its way', detail: 'Your order has been shipped.' },
+  { status: 'Delivered', label: 'Delivered', detail: 'Your order has arrived.' },
+];
 
 function Notice({ notice }) {
   if (!notice) return null;
@@ -197,14 +204,47 @@ function OrdersTab({ user, highlightId }) {
         <div className={`order-row${o.id === highlightId ? ' order-row-new' : ''}`} key={o.id}>
           <div className="order-row-head">
             <span>Order {shortOrderId(o.id)} · {formatDate(o.createdAt)}</span>
-            <span className="status-pill">{o.status}</span>
+            <span className={`status-pill${o.status === 'Cancelled' ? ' is-cancelled' : ''}`}>{o.status}</span>
           </div>
+          <OrderTracking status={o.status} />
+          {o.expectedDeliveryAt && !['Delivered', 'Cancelled'].includes(o.status) && (
+            <p className="order-eta">Estimated delivery <strong>{formatDate(o.expectedDeliveryAt)}</strong></p>
+          )}
           <ul className="order-items">
             {(o.items || []).map((i, n) => <li key={n}>{i.name} × {i.quantity}{i.size ? ` · ${i.size}` : ''}{i.color ? ` · ${i.color}` : ''}</li>)}
           </ul>
           <p className="eyebrow-plain">Total {formatPrice(o.total)} · {PAYMENT_LABELS[o.paymentMethod] || o.paymentMethod}{o.paymentStatus === 'unpaid' ? ' · payment due' : ''}</p>
         </div>
       ))}
+    </div>
+  );
+}
+
+function OrderTracking({ status }) {
+  if (status === 'Cancelled') {
+    return <p className="order-tracking-cancelled" role="status">This order has been cancelled.</p>;
+  }
+
+  const currentIndex = ORDER_TRACKING_STEPS.findIndex((step) => step.status === status);
+  if (currentIndex === -1) {
+    return <p className="order-tracking-note" role="status">Current order status: {status}</p>;
+  }
+
+  const currentStep = ORDER_TRACKING_STEPS[currentIndex];
+  return (
+    <div className="order-tracking" aria-label={`Order progress: ${currentStep.label}`}>
+      <p className="order-tracking-current"><strong>{currentStep.label}</strong><span>{currentStep.detail}</span></p>
+      <ol className="order-tracking-steps">
+        {ORDER_TRACKING_STEPS.map((step, index) => {
+          const state = index < currentIndex ? 'complete' : index === currentIndex ? 'current' : 'upcoming';
+          return (
+            <li className={`order-tracking-step is-${state}`} key={step.status} aria-current={state === 'current' ? 'step' : undefined}>
+              <span className="order-tracking-marker" aria-hidden="true">{index < currentIndex ? '✓' : index + 1}</span>
+              <span className="order-tracking-label">{step.label}</span>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }

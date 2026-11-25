@@ -4,21 +4,32 @@ import Toaster from './Toaster';
 import { BRAND_NAME } from '../lib/constants';
 
 const ADMIN_LINKS = [
-  { to: '/admin', label: 'Overview', icon: '▦', end: true },
-  { to: '/admin/orders', label: 'Transactions', icon: '⇄' },
+  { to: '/admin', label: 'Home', icon: '▦', end: true },
+  { to: '/admin/orders', label: 'Orders', icon: '⇄' },
   { to: '/admin/products', label: 'Products', icon: '◇' },
-  { to: '/admin/categories', label: 'Collections', icon: '◫' },
-  { to: '/admin/settings', label: 'Storefront', icon: '⌂' },
-  { to: '/admin/pages', label: 'Pages & SEO', icon: '◌' },
+  { to: '/admin/categories', label: 'Categories', icon: '◫' },
+  { to: '/admin/settings', label: 'Website Homepage', icon: '⌂' },
+  { to: '/admin/pages', label: 'Info Pages', icon: '◌' },
 ];
 
 const DEVELOPER_LINKS = [
-  { to: '/admin/developer', label: 'Operations console', icon: '⌘' },
+  { to: '/admin/developer', label: 'Developer tools', icon: '⌘' },
+  { to: '/admin/help', label: 'Help', icon: '?' },
 ];
+
+const PAGE_TITLES = {
+  '/admin': 'Home',
+  '/admin/orders': 'Orders',
+  '/admin/products': 'Products',
+  '/admin/categories': 'Categories',
+  '/admin/settings': 'Website Homepage',
+  '/admin/pages': 'Info Pages',
+  '/admin/developer': 'Developer tools',
+  '/admin/help': 'Help',
+};
 
 export default function AdminLayout() {
   const location = useLocation();
-  // admin.css styles `body.admin-body`, so toggle that class while in the admin area.
   useEffect(() => {
     document.body.classList.add('admin-body');
     return () => document.body.classList.remove('admin-body');
@@ -28,20 +39,24 @@ export default function AdminLayout() {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-sidebar-brand">
-          <Link to="/admin" className="logo">{BRAND_NAME}<span>control room</span></Link>
+          <Link to="/admin" className="logo">{BRAND_NAME}<span>shop admin</span></Link>
         </div>
-        <div className="admin-sidebar-section">Admin workspace</div>
+        <p className="admin-sidebar-intro">Here is what needs your attention today.</p>
         <nav className="admin-nav">
           {ADMIN_LINKS.map((l) => (
             <NavLink key={l.to} to={l.to} end={l.end}><span className="nav-icon" aria-hidden="true">{l.icon}</span>{l.label}</NavLink>
           ))}
         </nav>
-        <div className="admin-sidebar-section developer-section">Developer</div>
-        <nav className="admin-nav">
-          {DEVELOPER_LINKS.map((l) => (
-            <NavLink key={l.to} to={l.to} className={location.pathname === l.to ? 'active' : ''}><span className="nav-icon" aria-hidden="true">{l.icon}</span>{l.label}<span className="nav-badge">LIVE</span></NavLink>
-          ))}
-        </nav>
+
+        <details className="admin-advanced" open>
+          <summary>Advanced</summary>
+          <nav className="admin-nav advanced-nav">
+            {DEVELOPER_LINKS.map((l) => (
+              <NavLink key={l.to} to={l.to} className={location.pathname === l.to ? 'active' : ''}><span className="nav-icon" aria-hidden="true">{l.icon}</span>{l.label}</NavLink>
+            ))}
+          </nav>
+        </details>
+
         <div className="sidebar-footer">
           <span className="presence-dot" /> Secure session
           <Link to="/" className="back-link">Visit storefront <span aria-hidden="true">↗</span></Link>
@@ -49,8 +64,14 @@ export default function AdminLayout() {
       </aside>
       <div className="admin-workspace">
         <header className="admin-header">
-          <div><span className="admin-header-eyebrow">{location.pathname === '/admin/developer' ? 'Developer workspace' : 'Admin workspace'}</span><span className="admin-header-title">{location.pathname === '/admin/developer' ? 'Transaction operations' : 'Store control center'}</span></div>
-          <div className="admin-header-actions"><span className="header-live"><i />System live</span><Link to="/" className="admin-visit-link">Visit website <span aria-hidden="true">↗</span></Link></div>
+          <div>
+            <span className="admin-header-eyebrow">{location.pathname === '/admin/developer' ? 'Developer tools' : 'Shop admin'}</span>
+            <span className="admin-header-title">{PAGE_TITLES[location.pathname] || 'Shop admin'}</span>
+          </div>
+          <div className="admin-header-actions">
+            <Link to="/admin/help" className="admin-visit-link">Help</Link>
+            <Link to="/" className="admin-visit-link">Visit website <span aria-hidden="true">↗</span></Link>
+          </div>
         </header>
         <main className="admin-main"><Outlet /></main>
       </div>

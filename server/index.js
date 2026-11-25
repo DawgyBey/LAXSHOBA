@@ -5,16 +5,17 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_ABOUT_TEXT, DEFAULT_CATEGORIES, DEFAULT_HERO, DEFAULT_HERO_IMAGE, DEMO_PRODUCTS } from '../src/lib/constants.js';
-import { ORDER_STATUSES, PAYMENT_METHODS, canTransition, isAdminAccount, isObjectId, parseEmailList, normalizeEmail, parsePagination, validatePassword, cleanText } from './lib/validate.js';
+import { ORDER_STATUSES, PAYMENT_METHODS, canTransition, isExpectedDeliveryDays, isAdminAccount, isObjectId, parseEmailList, normalizeEmail, parsePagination, validatePassword, cleanText } from './lib/validate.js';
 import { OrderError, priceOrder } from './lib/pricing.js';
 import { csrfProtection, newCsrfToken, parseOrigins, rateLimiter, securityHeaders } from './lib/security.js';
 import { addressSpec, categorySpec, checkoutSpec, homepageSpec, pageSpec, productSpec, profileSpec, sanitize, sanitizeCartLines } from './lib/schemas.js';
-import { sendPasswordReset, sendAdminOrderAlert } from './mailer.js';
+import { sendPasswordReset, sendAdminOrderAlert, sendCustomerOrderConfirmation } from './mailer.js';
 import { sendWhatsAppAlert } from './lib/twilio.js';
 import { isValidPhone } from '../src/lib/validation.js';
 
@@ -30,6 +31,11 @@ if (isProduction && (jwtSecret.length < 32 || trustedOrigins.size === 0)) throw 
 
 const adminEmails = parseEmailList(process.env.ADMIN_EMAILS); // narrows admin access to these emails (role in the DB is still required)
 const isAdminUser = (user) => isAdminAccount(user, adminEmails);
+if (isProduction) {
+  if (!process.env.RESEND_API_KEY) console.warn('[startup] RESEND_API_KEY is missing. Email sends will fail in production.');
+  const seenLocalhost = (process.env.CLIENT_ORIGIN || '').split(',').some((origin) => /localhost|127\.0\.0\.1/.test(origin));
+  if (seenLocalhost) console.warn('[startup] CLIENT_ORIGIN contains localhost/127.0.0.1 in production. Use the real public origin only.');
+}
 if (isProduction && adminEmails.size === 0) console.warn('ADMIN_EMAILS is not set: any account with role "admin" in the database can use the admin API. Set it to the owner email(s).');
 const JWT_OPTS = { issuer: 'laxshobha', audience: 'laxshobha-web' };
 const SESSION_TTL = { customer: 7 * 24 * 3600, admin: 8 * 3600 }; // seconds; admin sessions are deliberately short
@@ -58,31 +64,33 @@ const Homepage = mongoose.model('Homepage', new mongoose.Schema({ key: { type: S
 const Page = mongoose.model('Page', new mongoose.Schema({ slug: { type: String, unique: true, trim: true, lowercase: true }, name: String, title: String, metaTitle: String, metaDescription: String, content: String, published: { type: Boolean, default: true } }, baseSchema));
 const Cart = mongoose.model('Cart', new mongoose.Schema({ userId: { type: mongoose.Types.ObjectId, unique: true }, items: Array }, baseSchema));
 const Address = mongoose.model('Address', new mongoose.Schema({ userId: { type: mongoose.Types.ObjectId, index: true }, label: String, street: String, city: String, phone: String }, baseSchema));
-const orderSchema = new mongoose.Schema({ userId: { type: mongoose.Types.ObjectId, index: true }, customerName: String, customerEmail: String, items: Array, subtotal: Number, total: Number, address: Object, paymentMethod: String, paymentStatus: { type: String, default: 'unpaid' }, status: { type: String, default: 'Pending', enum: ORDER_STATUSES }, statusHistory: Array }, baseSchema);
+const orderSchema = new mongoose.Schema({ userId: { type: mongoose.Types.ObjectId, index: true }, customerName: String, customerEmail: String, items: Array, subtotal: Number, deliveryFee: { type: Number, default: 0 }, total: Number, address: Object, paymentMethod: String, paymentStatus: { type: String, default: 'unpaid' }, status: { type: String, default: 'Pending', enum: ORDER_STATUSES }, expectedDeliveryDays: { type: Number, default: null }, expectedDeliveryAt: { type: Date, default: null }, statusHistory: Array }, baseSchema);
 orderSchema.index({ createdAt: -1 });
 const Order = mongoose.model('Order', orderSchema);
 const NewsletterSubscriber = mongoose.model('NewsletterSubscriber', new mongoose.Schema({ email: { type: String, required: true, unique: true, lowercase: true, trim: true } }, baseSchema));
 
 async function seedContent() {
-  if (!(await Product.exists())) await Product.insertMany(DEMO_PRODUCTS.map(({ id, ...product }) => ({ ...product, seedId: id })));
-  for (const { id, ...product } of DEMO_PRODUCTS.filter((item) => item.isNewArrival)) {
-    await Product.updateOne(
-      { seedId: id },
-      { $setOnInsert: { ...product, seedId: id } },
-      { upsert: true },
-    );
+  if (process.env.SEED_DEMO === 'true' && !(await Product.exists())) {
+    await Product.insertMany(DEMO_PRODUCTS.map(({ id, ...product }) => ({ ...product, seedId: id })));
   }
   const categoriesBySlug = new Map();
   for (const { name, slug, parentSlug } of DEFAULT_CATEGORIES) {
     const parent = parentSlug ? categoriesBySlug.get(parentSlug) : null;
+    const existing = await Category.findOne({ slug });
+    if (existing) {
+      categoriesBySlug.set(slug, existing);
+      continue;
+    }
     const category = await Category.findOneAndUpdate(
       { slug },
-      { $setOnInsert: { name, slug }, $set: { parentId: parent ? String(parent._id) : null } },
+      { $setOnInsert: { name, slug, parentId: parent ? String(parent._id) : null } },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
     categoriesBySlug.set(slug, category);
   }
-  if (!(await Homepage.exists({ key: 'main' }))) await Homepage.create({ key: 'main', heroTitle: DEFAULT_HERO.title, heroDescription: DEFAULT_HERO.text, heroImage: DEFAULT_HERO_IMAGE, aboutText: DEFAULT_ABOUT_TEXT, aboutImage: '', featuredProductIds: [] });
+  if (!(await Homepage.exists({ key: 'main' }))) {
+    await Homepage.create({ key: 'main', heroTitle: DEFAULT_HERO.title, heroDescription: DEFAULT_HERO.text, heroImage: DEFAULT_HERO_IMAGE, aboutText: DEFAULT_ABOUT_TEXT, aboutImage: '', featuredProductIds: [] });
+  }
 }
 
 // ---- session helpers -------------------------------------------------------------------------
@@ -210,7 +218,22 @@ app.get('/api/products', asyncRoute(async (req, res) => { const { limit, skip } 
 app.get('/api/products/:id', asyncRoute(async (req, res) => { const product = isObjectId(req.params.id) ? await Product.findOne({ _id: req.params.id, published: true }) : null; if (!product) return res.status(404).json({ error: 'Product not found' }); res.json(product); }));
 app.get('/api/categories', asyncRoute(async (_, res) => res.json(await Category.find().sort({ name: 1 }).limit(500))));
 app.get('/api/homepage', asyncRoute(async (_, res) => res.json((await Homepage.findOne({ key: 'main' })) || {})));
+app.get('/api/payment-info', asyncRoute(async (_, res) => {
+  const info = {};
+  for (const [outputKey, envKey] of [['bankName', 'BANK_NAME'], ['bankAccountName', 'BANK_ACCOUNT_NAME'], ['bankAccountNumber', 'BANK_ACCOUNT_NUMBER'], ['bankBranch', 'BANK_BRANCH'], ['esewaId', 'ESEWA_ID']]) {
+    const value = String(process.env[envKey] || '').trim();
+    if (value) info[outputKey] = value;
+  }
+  res.json(info);
+}));
 app.get('/api/pages/:slug', asyncRoute(async (req, res) => { const page = await Page.findOne({ slug: String(req.params.slug).toLowerCase().slice(0, 80), published: true }); if (!page) return res.status(204).end(); res.json(page); }));
+app.get('/sitemap.xml', asyncRoute(async (_, res) => {
+  const root = 'https://laxufancystore.com.np';
+  const staticRoutes = ['/', '/shop', '/about', '/contact', '/page/privacy-policy', '/page/terms', '/page/returns', '/page/shipping'];
+  const products = await Product.find({ published: true }).select('_id').lean();
+  const xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', ...staticRoutes.map((route) => `  <url><loc>${root}${route}</loc></url>`), ...products.map((product) => `  <url><loc>${root}/products/${product._id}</loc></url>`), '</urlset>'].join('\n');
+  res.type('application/xml').send(xml);
+}));
 app.post('/api/newsletter', limitNewsletter, asyncRoute(async (req, res) => {
   const email = normalizeEmail(body(req).email); if (!email) return bad(res, 'Enter a valid email address');
   await NewsletterSubscriber.updateOne({ email }, { $setOnInsert: { email } }, { upsert: true });
@@ -270,14 +293,15 @@ app.post('/api/me/orders', limitOrders, asyncRoute(async (req, res) => {
       if (r.modifiedCount !== 1) throw new OrderError('Not enough stock for an item in your cart', 409, 'OUT_OF_STOCK');
       reserved.push([productId, qty]);
     }
-    const order = await Order.create({ userId: req.user.id, customerName: value.customerName, customerEmail: req.user.email || '', items: priced.items, subtotal: priced.subtotal, total: priced.total, address: { street: addr.value.street, city: addr.value.city, phone: addr.value.phone }, paymentMethod: value.paymentMethod, paymentStatus: 'unpaid', status: 'Pending', statusHistory: [{ status: 'Pending', at: new Date() }] });
-    // Send admin alerts in the background so messaging providers cannot delay checkout.
+    const order = await Order.create({ userId: req.user.id, customerName: value.customerName, customerEmail: req.user.email || '', items: priced.items, subtotal: priced.subtotal, deliveryFee: priced.deliveryFee, total: priced.total, address: { street: addr.value.street, city: addr.value.city, phone: addr.value.phone }, paymentMethod: value.paymentMethod, paymentStatus: 'unpaid', status: 'Pending', statusHistory: [{ status: 'Pending', at: new Date() }] });
+    // Send alerts in the background so messaging providers cannot delay checkout.
     void Promise.allSettled([
       sendAdminOrderAlert(order),
+      sendCustomerOrderConfirmation(order),
       sendWhatsAppAlert(`New order received! Total: Rs. ${order.total}. Customer: ${order.customerName} (${order.customerEmail}). Items: ${order.items.length}.`),
     ]).then((results) => {
       results.forEach((result) => {
-        if (result.status === 'rejected') console.error('[orders] Admin alert failed:', result.reason);
+        if (result.status === 'rejected') console.error('[orders] Alert failed:', result.reason);
       });
     });
     res.status(201).json(order);
@@ -321,12 +345,31 @@ app.patch('/api/admin/pages/:id', asyncRoute(async (req, res) => {
 }));
 app.delete('/api/admin/pages/:id', asyncRoute(async (req, res) => { if (isObjectId(req.params.id)) await Page.findByIdAndDelete(req.params.id); res.status(204).end(); }));
 app.patch('/api/admin/orders/:id', asyncRoute(async (req, res) => {
-  const to = body(req).status; if (!isObjectId(req.params.id)) return res.status(404).json({ error: 'Order not found' });
-  if (!ORDER_STATUSES.includes(to)) return bad(res, 'Invalid status');
+  const updates = body(req);
+  const hasStatus = Object.hasOwn(updates, 'status');
+  const hasDeliveryEstimate = Object.hasOwn(updates, 'expectedDeliveryDays');
+  if (!isObjectId(req.params.id)) return res.status(404).json({ error: 'Order not found' });
+  if (!hasStatus && !hasDeliveryEstimate) return bad(res, 'Choose an order status or delivery estimate to update');
+  const to = updates.status;
+  if (hasStatus && !ORDER_STATUSES.includes(to)) return bad(res, 'Invalid status');
+  const expectedDeliveryDays = updates.expectedDeliveryDays;
+  if (hasDeliveryEstimate && expectedDeliveryDays !== null && !isExpectedDeliveryDays(expectedDeliveryDays)) return bad(res, 'Choose a valid expected delivery time');
   const order = await Order.findById(req.params.id); if (!order) return res.status(404).json({ error: 'Order not found' });
-  if (!canTransition(order.status, to)) return res.status(409).json({ error: `Cannot change an order from ${order.status} to ${to}` });
-  // Conditional on the current status so two concurrent updates cannot both apply (and a cancel restocks exactly once).
-  const updated = await Order.findOneAndUpdate({ _id: order.id, status: order.status }, { status: to, $push: { statusHistory: { status: to, at: new Date(), by: req.user.id } } }, { new: true });
+  if (hasStatus && !canTransition(order.status, to)) return res.status(409).json({ error: `Cannot change an order from ${order.status} to ${to}` });
+  const update = {};
+  if (hasStatus) {
+    update.status = to;
+    update.$push = { statusHistory: { status: to, at: new Date(), by: req.user.id } };
+  }
+  if (hasDeliveryEstimate) {
+    update.expectedDeliveryDays = expectedDeliveryDays;
+    update.expectedDeliveryAt = expectedDeliveryDays === null
+      ? null
+      : new Date(Date.now() + expectedDeliveryDays * 24 * 60 * 60 * 1000);
+  }
+  const query = { _id: order.id, ...(hasStatus ? { status: order.status } : {}) };
+  // Conditional on current status so concurrent status updates cannot both apply.
+  const updated = await Order.findOneAndUpdate(query, update, { new: true, runValidators: true });
   if (!updated) return res.status(409).json({ error: 'Order was modified by someone else. Reload and retry.' });
   if (to === 'Cancelled') await Promise.allSettled((order.items || []).map((i) => isObjectId(String(i.productId)) && Product.updateOne({ _id: i.productId }, { $inc: { stock: Number(i.quantity) || 0 } })));
   res.json(updated);
@@ -338,6 +381,11 @@ app.use('/api', (_, res) => res.status(404).json({ error: 'Not found' }));
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 if (isProduction) {
   const dist = path.join(__dirname, '../dist');
+  const publicDir = path.join(__dirname, '../public');
+  app.use(compression());
+  app.use('/photos', express.static(path.join(publicDir, 'photos'), { maxAge: '30d', setHeaders: (res) => res.setHeader('Cache-Control', 'public, max-age=2592000') }));
+  app.use('/images', express.static(path.join(publicDir, 'images'), { maxAge: '30d', setHeaders: (res) => res.setHeader('Cache-Control', 'public, max-age=2592000') }));
+  app.use('/brand', express.static(path.join(publicDir, 'brand'), { maxAge: '30d', setHeaders: (res) => res.setHeader('Cache-Control', 'public, max-age=2592000') }));
   app.use(express.static(dist, { index: false, setHeaders: (res, p) => { if (p.includes(`${path.sep}assets${path.sep}`)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); } }));
   app.get('/{*splat}', (_, res) => res.sendFile(path.join(dist, 'index.html'))); // Express 5 syntax; bare '*' throws
 }

@@ -6,7 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import useAsync from '../hooks/useAsync';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import ProductGrid from '../components/ProductGrid';
-import { COLORS, DEMO_PRODUCTS, OCCASIONS, SIZES } from '../lib/constants';
+import { COLORS, OCCASIONS, SIZES } from '../lib/constants';
 import { getCategories, getProducts } from '../lib/data';
 import { discountPercent, effectivePrice } from '../lib/format';
 

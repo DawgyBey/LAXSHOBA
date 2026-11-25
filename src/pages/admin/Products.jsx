@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import useAsync from '../../hooks/useAsync';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import Field from '../../components/Field';
@@ -41,6 +41,8 @@ export default function Products() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [images, setImages] = useState([]); // Hosted image URLs for the product being edited
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
+  const [visibility, setVisibility] = useState('all');
 
   const bind = (key) => ({ value: form[key], onChange: (e) => setForm((f) => ({ ...f, [key]: e.target.value })) });
   const bindCheck = (key) => ({ checked: form[key], onChange: (e) => setForm((f) => ({ ...f, [key]: e.target.checked })) });
@@ -147,14 +149,37 @@ export default function Products() {
         parentId: parentSlug ? `slug:${parentSlug}` : null,
       })),
   ];
+  const visibleProducts = useMemo(() => list.filter((product) => {
+    const matchesQuery = `${product.name} ${product.categorySlug || ''}`.toLowerCase().includes(query.trim().toLowerCase());
+    const matchesVisibility = visibility === 'all' || (visibility === 'published' ? product.published !== false : product.published === false);
+    return matchesQuery && matchesVisibility;
+  }), [list, query, visibility]);
+  const publishedCount = list.filter((product) => product.published !== false).length;
+  const draftCount = list.length - publishedCount;
 
   return (
-    <div>
-      <h1>Products</h1>
+    <div className="products-page">
+      <section className="page-intro products-intro">
+        <div>
+          <span className="section-kicker">Catalogue / inventory</span>
+          <h1>Products</h1>
+          <p>Keep your collection polished, stocked and ready to shop.</p>
+        </div>
+        <div className="products-heading-actions">
+          <span className="products-count"><strong>{list.length}</strong> {list.length === 1 ? 'piece' : 'pieces'}</span>
+          <button type="button" className="btn btn-primary" onClick={() => (formOpen ? setFormOpen(false) : openForm(null))}>{formOpen ? 'Close editor' : 'Add product'} {!formOpen && <span aria-hidden="true">＋</span>}</button>
+        </div>
+      </section>
 
       {formOpen && (
-        <div className="admin-panel-box">
-          <h3>Product Details</h3>
+        <section className="admin-panel-box product-editor">
+          <div className="product-editor-heading">
+            <div>
+              <span className="section-kicker">{editingId ? 'Edit catalogue entry' : 'New catalogue entry'}</span>
+              <h2>{editingId ? 'Product details' : 'Add a product'}</h2>
+            </div>
+            <button type="button" className="product-editor-close" onClick={() => setFormOpen(false)} aria-label="Close product editor">×</button>
+          </div>
           <form onSubmit={saveProduct}>
             <div className="form-grid-2">
               <Field label="Name" type="text" required {...bind('name')} />
@@ -182,23 +207,28 @@ export default function Products() {
             </div>
             <OptionPicker label="Occasions" options={OCCASIONS} value={form.occasion} onToggle={(option) => toggleOption('occasion', option)} />
 
-            <div className="field">
-              <label htmlFor="product-images">Product Images</label>
+            <div className="field product-images-field">
+              <div className="product-images-heading">
+                <strong>Product images</strong>
+                <span>{images.length} {images.length === 1 ? 'image' : 'images'} · first image is the cover</span>
+              </div>
               <div className="image-upload-grid">
                 {images.map((url, i) => (
-                  <div className="thumb" key={url}>
+                  <div className="thumb" key={`${url}-${i}`}>
                     <img src={url} alt="" />
-                    <button type="button" className="remove-img" onClick={() => removeImage(i)}>&times;</button>
+                    <button type="button" className="remove-img" onClick={() => removeImage(i)} aria-label={`Remove image ${i + 1}`}>&times;</button>
                     <div className="reorder-btns">
-                      <button type="button" onClick={() => moveImage(i, -1)}>&larr;</button>
-                      <button type="button" onClick={() => moveImage(i, 1)}>&rarr;</button>
+                      <button type="button" onClick={() => moveImage(i, -1)} disabled={i === 0} aria-label={`Move image ${i + 1} earlier`}>&larr;</button>
+                      <button type="button" onClick={() => moveImage(i, 1)} disabled={i === images.length - 1} aria-label={`Move image ${i + 1} later`}>&rarr;</button>
                     </div>
                   </div>
                 ))}
               </div>
+              {images.length === 0 && <p className="product-images-empty">Add hosted image URLs below to give this product a cover photo.</p>}
               <Field
                 label="Image URLs (comma separated)"
                 type="text"
+                placeholder="https://…/front.jpg, https://…/back.jpg"
                 value={images.join(', ')}
                 onChange={(e) => setImages(e.target.value.split(',').map((url) => url.trim()).filter(Boolean))}
               />
@@ -210,36 +240,63 @@ export default function Products() {
               <label><input type="checkbox" {...bindCheck('published')} /> Published</label>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+            <div className="product-editor-actions">
               <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save Product'}</button>
               <button type="button" className="btn btn-outline" onClick={() => setFormOpen(false)}>Cancel</button>
             </div>
           </form>
-        </div>
+        </section>
       )}
 
-      <div className="admin-panel-box">
-        <h3>Products List</h3>
-        <table className="admin-table">
-          <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            {!products.loading && list.length === 0 && <tr><td colSpan="6">No products yet — add your first one.</td></tr>}
-            {list.map((p) => (
-              <tr key={p.id}>
-                <td><img src={firstImage(p, PLACEHOLDER.product)} alt="" /></td>
-                <td>{formatProductName(p.name)}</td>
-                <td>{formatPrice(p.salePrice || p.price)}</td>
-                <td>{p.stock}</td>
-                <td>{p.published ? 'Published' : 'Draft'}</td>
-                <td className="row-actions">
-                  <button className="btn btn-small btn-outline" onClick={() => openForm(p)}>Edit</button>
-                  <button className="btn btn-small btn-outline" onClick={() => deleteProduct(p.id)}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <section className="admin-panel-box products-catalogue">
+        <div className="products-toolbar">
+          <div>
+            <span className="section-kicker">Your collection</span>
+            <h2>All products <span>{visibleProducts.length}</span></h2>
+          </div>
+          <label className="products-search">
+            <span className="sr-only">Search products</span>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
+            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products" />
+          </label>
+        </div>
+        <div className="products-filter-row" role="group" aria-label="Filter products by visibility">
+          {[['all', `All ${list.length}`], ['published', `Published ${publishedCount}`], ['draft', `Drafts ${draftCount}`]].map(([key, label]) => (
+            <button key={key} type="button" className={visibility === key ? 'active' : ''} aria-pressed={visibility === key} onClick={() => setVisibility(key)}>{label}</button>
+          ))}
+        </div>
+        {products.error && !products.loading && <div className="admin-notice error" role="alert">Products could not be loaded. <button type="button" onClick={products.reload}>Try again</button></div>}
+        {products.loading && !products.data
+          ? <p className="products-empty" role="status">Loading your collection…</p>
+          : <div className="table-scroll products-table-scroll">
+            <table className="admin-table products-table">
+              <thead><tr><th>Product</th><th>Price</th><th>Stock</th><th>Visibility</th><th><span className="sr-only">Actions</span></th></tr></thead>
+              <tbody>
+                {visibleProducts.length === 0 && <tr><td colSpan="5"><p className="products-empty">{list.length === 0 ? 'No products yet — add your first piece.' : 'No products match these filters.'}</p></td></tr>}
+                {visibleProducts.map((product) => (
+                  <tr key={product.id}>
+                    <td>
+                      <div className="product-cell">
+                        <img className="product-list-image" src={firstImage(product, PLACEHOLDER.product)} alt="" loading="lazy" />
+                        <div className="product-cell-copy">
+                          <strong>{formatProductName(product.name)}</strong>
+                          <span>{product.categorySlug ? formatProductName(product.categorySlug) : 'Uncategorised'}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td><strong>{formatPrice(product.salePrice || product.price)}</strong>{product.salePrice && product.price > product.salePrice && <span className="product-list-original">{formatPrice(product.price)}</span>}</td>
+                    <td><span className={`product-stock${product.stock <= 3 ? ' is-low' : ''}`}>{product.stock ?? 0}<small>{product.stock <= 3 ? 'Low stock' : 'In stock'}</small></span></td>
+                    <td><span className={`product-visibility${product.published === false ? ' is-draft' : ''}`}><i aria-hidden="true" />{product.published === false ? 'Draft' : 'Published'}</span></td>
+                    <td className="products-row-actions">
+                      <button type="button" className="btn btn-small btn-outline" onClick={() => openForm(product)}>Edit</button>
+                      <button type="button" className="btn btn-small btn-outline" onClick={() => deleteProduct(product.id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>}
+      </section>
     </div>
   );
 }

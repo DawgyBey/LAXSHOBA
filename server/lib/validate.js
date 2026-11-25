@@ -1,5 +1,6 @@
 // Pure validation/normalisation helpers (no I/O, no dependencies) so they are unit-testable.
 export const ORDER_STATUSES = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+export const EXPECTED_DELIVERY_DAYS = [1, 2, 3, 5, 7, 10, 14];
 // Allowed forward transitions. Delivered and Cancelled are terminal.
 export const ORDER_TRANSITIONS = {
   Pending: ['Confirmed', 'Cancelled'],
@@ -12,6 +13,7 @@ export const ORDER_TRANSITIONS = {
 export const PAYMENT_METHODS = ['cod', 'bank'];
 
 export const canTransition = (from, to) => Boolean(ORDER_TRANSITIONS[from]?.includes(to));
+export const isExpectedDeliveryDays = (value) => Number.isInteger(value) && EXPECTED_DELIVERY_DAYS.includes(value);
 export const isObjectId = (v) => typeof v === 'string' && /^[a-f\d]{24}$/i.test(v);
 
 export function normalizeEmail(value) {

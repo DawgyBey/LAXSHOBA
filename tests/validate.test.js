@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeEmail, validatePassword, safeRedirect, canTransition, pick, parsePagination, isObjectId } from '../server/lib/validate.js';
+import { normalizeEmail, validatePassword, safeRedirect, canTransition, isExpectedDeliveryDays, pick, parsePagination, isObjectId } from '../server/lib/validate.js';
 
 test('normalizeEmail lowercases/trims and rejects junk', () => {
   assert.equal(normalizeEmail('  Admin@LaxShobha.COM '), 'admin@laxshobha.com');
@@ -29,6 +29,10 @@ test('order status transitions are forward-only', () => {
   assert.ok(!canTransition('Cancelled', 'Confirmed'));
   assert.ok(!canTransition('Pending', 'Delivered'));
   assert.ok(!canTransition('Pending', 'Bogus'));
+});
+test('expected delivery days accepts only the admin delivery options', () => {
+  for (const days of [1, 2, 3, 5, 7, 10, 14]) assert.equal(isExpectedDeliveryDays(days), true);
+  for (const days of [0, -1, 4, 15, 2.5, '3', null]) assert.equal(isExpectedDeliveryDays(days), false);
 });
 test('pick drops non-allowlisted keys (mass assignment)', () => {
   assert.deepEqual(pick({ name: 'a', role: 'admin', $set: 1 }, ['name']), { name: 'a' });

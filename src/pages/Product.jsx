@@ -12,7 +12,7 @@ import Loading from '../components/Loading';
 import Price from '../components/Price';
 import QtyControl from '../components/QtyControl';
 import ZoomImage from '../components/ZoomImage';
-import { DEMO_PRODUCTS, PLACEHOLDER } from '../lib/constants';
+import { PLACEHOLDER } from '../lib/constants';
 import { getProduct } from '../lib/data';
 import { discountPercent, effectivePrice, formatPrice } from '../lib/format';
 import { toast } from '../lib/toast';
@@ -181,8 +181,6 @@ function ProductDetail({ product }) {
 export default function Product() {
   const { id } = useParams();
   const { data: product, loading } = useAsync(async () => {
-    const demoProduct = DEMO_PRODUCTS.find((demo) => demo.id === id);
-    if (demoProduct) return demoProduct;
     try {
       return await getProduct(id);
     } catch (error) {

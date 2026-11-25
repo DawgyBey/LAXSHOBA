@@ -1,5 +1,4 @@
 import { api } from './api';
-import { DEMO_PRODUCTS } from './constants';
 
 export const getProducts = (published) => api.get(`/products${published ? '?published=true' : ''}`);
 export const getProduct = (id) => api.get(`/products/${id}`);
@@ -12,11 +11,7 @@ export const getWishlist = async () => {
 	const result = await api.get('/me/wishlist');
 	if (Array.isArray(result)) return result;
 	const products = result.products || [];
-	const savedIds = new Set(result.ids || products.map((product) => product.id));
-	return [
-		...products,
-		...DEMO_PRODUCTS.filter((product) => savedIds.has(product.id)),
-	];
+	return products;
 };
 export const saveWishlist = (productId, saved) => api.put(`/me/wishlist/${productId}`, { saved });
 export const getAddresses = () => api.get('/me/addresses');
@@ -34,7 +29,7 @@ export const getAdminCategories = () => api.get('/admin/categories');
 export const createCategory = (category) => api.post('/admin/categories', category);
 export const removeCategory = (id) => api.delete(`/admin/categories/${id}`);
 export const getAdminOrders = () => api.get('/admin/orders');
-export const updateOrder = (id, status) => api.patch(`/admin/orders/${id}`, { status });
+export const updateOrder = (id, updates) => api.patch(`/admin/orders/${id}`, typeof updates === 'string' ? { status: updates } : updates);
 export const saveHomepage = (content) => api.put('/admin/homepage', content);
 export const getAdminPages = () => api.get('/admin/pages');
 export const createPage = (page) => api.post('/admin/pages', page);

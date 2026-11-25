@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { priceOrder, OrderError } from '../server/lib/pricing.js';
+import { priceOrder, OrderError, getDeliveryFee } from '../server/lib/pricing.js';
 
 const A = '507f1f77bcf86cd799439011', B = '507f1f77bcf86cd799439012', C = '507f1f77bcf86cd799439013';
 const catalog = () => new Map([
@@ -31,3 +31,14 @@ test('stock is enforced across split size/colour lines', () => {
 });
 test('rejects sizes/colours the product does not offer', () => { rejects([{ productId: A, quantity: 1, size: 'XXL' }]); rejects([{ productId: A, quantity: 1, color: 'Green' }]); });
 test('caps line count', () => { rejects(Array.from({ length: 51 }, () => ({ productId: A, quantity: 1 }))); });
+test('delivery fee is server-side and applies after subtotal', () => {
+  const previousFee = process.env.DELIVERY_FEE;
+  const previousThreshold = process.env.FREE_DELIVERY_THRESHOLD;
+  process.env.DELIVERY_FEE = '150';
+  process.env.FREE_DELIVERY_THRESHOLD = '5000';
+  assert.equal(getDeliveryFee(1200), 150);
+  assert.equal(getDeliveryFee(6000), 0);
+  assert.equal(priceOrder([{ productId: A, quantity: 1 }], catalog()).total, 950);
+  if (previousFee === undefined) delete process.env.DELIVERY_FEE; else process.env.DELIVERY_FEE = previousFee;
+  if (previousThreshold === undefined) delete process.env.FREE_DELIVERY_THRESHOLD; else process.env.FREE_DELIVERY_THRESHOLD = previousThreshold;
+});
